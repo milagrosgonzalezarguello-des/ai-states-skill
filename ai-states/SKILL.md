@@ -48,17 +48,18 @@ These steps are for designing or reviewing a feature. For a single question or a
    - **Applies** - *yes*, *no* (with the reason), or *only if* a signal exists that you could not confirm.
    - **Today** (when reviewing something that exists) - *designed*, *incomplete* (it exists but lacks something the stakes require - say what), *generic* (a catch-all handles it) or *missing*.
 
-   An *only if* state gets a spec block and a row in the map, counts as "to confirm" in the coverage strip rather than in the total, and gets a card only when it is likely enough to be worth drawing.
+   An *only if* state gets a spec block and a row in the map, counts as "to confirm" in the coverage strip rather than in the total (in a review, its cell still shows how it stands today: "Only if · generic today"), and gets a card only when it is likely enough to be worth drawing.
 
    If the AI runs several steps, uses tools on its own or works while the user is away, do the same with the delegation states in `references/delegation.md`, and fill in the autonomy level and the permission table for each kind of action. A chat that takes one action after the user confirms it is not an agent: state 5 (with its "after confirming" screen and the undo) covers it, plus a three-column permission table. Do not force D1-D12 onto it. When the user asked about a single state you do not deliver the map, but you still run through it in your head, and name the one or two neighbouring states they most need to check.
 5. **Specify each state that applies** in the format below.
-6. **Draw the board.** Start from `assets/template.html`: one card per state, showing the real component in that state with the final copy. A list of states in prose gets nodded at; a board where the gaps are visibly missing gets fixed. Use the product's own look if you were given it (colours, components, screenshots); otherwise keep the template's neutral style and say so. Draw the feature's real surface: a button-and-panel feature gets panels, not chat bubbles. A state that needs several screens (before and after confirming) stays one card with those screens. For a new design, delete the template's findings block and the map's Today column, and let the coverage line say how many states apply, how many do not, and how many wait on a signal.
+6. **Draw the board.** Start with `python <skill folder>/scripts/new_board.py board.html --title "..." --lang es` (add `--review` for a review): it copies `assets/template.html` without the instructions and examples. Then one card per state, showing the real component in that state with the final copy. A list of states in prose gets nodded at; a board where the gaps are visibly missing gets fixed. Use the product's own look if you were given it (colours, components, screenshots); otherwise keep the template's neutral style and say so. Draw the feature's real surface: a button-and-panel feature gets panels, not chat bubbles. A state that needs several screens (before and after confirming) stays one card with those screens. For a new design (`new_board.py` already removes the findings block and the Today column), the coverage strip says, per state: *designed*, *designed · signal to confirm* (class `if`), *designed · owner review* (class `review`, the sensitive moment) or *not applicable*. The summary line counts the states that apply, the ones that wait on a signal, and the ones that do not apply. In the map, the sensitive moment's Applies is "yes · owner review". With `--lang es`, `new_board.py` also translates the board's headings and the flow player.
+   Then make it playable: give each screen a `data-screen` id and each button a `data-go` with the screen it leads to (the template explains how). The board gets a **Try the flow** button that turns it into a clickable prototype, and flags screens with no way out. Wiring the buttons is where flow mistakes show up - a retry that leads nowhere, a confirmation with no "after" - so do it even if nobody asked for a prototype.
 7. **Write the copy** following `references/copy.md`, in the language and register of the product.
-8. **Write the test script and the measures** (`references/measure.md`): one input that provokes each state, and what to log for it.
-9. **Review** against `references/checklist.md` and `references/anti-patterns.md`, looking at the rendered board, not the source. `python scripts/screenshot.py board.html board.png` renders it to an image you can open (in-app browsers often refuse local files); add `--tile 1400` to get it in readable slices when the board is long. If you change the board after looking, render again.
+8. **Write the test script and the measures** (`references/measure.md`): one input that provokes each state, and what to log for it. Save the tests as `state-tests.json` too, in the format given there, so engineering can run them against the real feature.
+9. **Review.** Run `python <skill folder>/scripts/check_board.py board.html --tests state-tests.json` and fix what it lists: dead ends, leftovers, colour contrast, states without a test. Then go through `references/checklist.md` and `references/anti-patterns.md`, looking at the rendered board, not the source. `python <skill folder>/scripts/screenshot.py board.html board.png` renders it to an image you can open (in-app browsers often refuse local files); add `--tile 1400` to get it in readable slices when the board is long. If you change the board after looking, render again. Rendering a long board can take a few minutes on Windows; run it in the background if your tool has a time limit.
 10. **Deliver** the board, the spec, and a short list of what you assumed and what you need answered. Say what you verified and what you did not.
 
-**What to read.** For a single question about one moment: that state and its neighbours in `states.md`, and `copy.md` - nothing else. For a design or a review, always: `states.md`, `copy.md`, `checklist.md`, and the section of `surfaces.md` for this surface. Also `failure-modes.md` and `anti-patterns.md`: skim them for a new design, read them in full for a review. Only for agents (several steps, tools, unattended work): `delegation.md`. `measure.md` when you write the test script.
+**What to read.** For a single question about one moment: that state in `states.md`, the states its "Goes to" leads to, and `copy.md` - nothing else. For any of the four "no"s, read all four (9-12): they are defined by their differences. For a design or a review, always: `states.md`, `copy.md`, `checklist.md`, and the section of `surfaces.md` for this surface. Also `failure-modes.md` and `anti-patterns.md`: skim them for a new design, read them in full for a review. Only for agents (several steps, tools, unattended work): `delegation.md`. Only for spoken assistants: `voice.md`. `measure.md` when you write the test script.
 
 ## The states
 
@@ -98,15 +99,17 @@ Twelve delegation states, for AI that acts. Detailed in `references/delegation.m
 | D11. Learns | What does it now assume about me? |
 | D12. Acts toward others | What do other people see - and do they know it was the AI? |
 
-For an agent that works in the background with no conversation, several answer states are replaced by their delegation counterpart rather than drawn twice: Composing by D1 Brief, Working by D4, Needs a clarification by D5. Mark the answer state "no - see D4" in the map. A recurring job (every night, every Monday) has a standing brief and plan: D1 and D2 are the settings the user reviews once and can see before each run. On such a board you may order the cards by time (before, while it works, when it hands back) instead of by the five moments, if that reads better; keep the state numbers.
+For an agent that works in the background with no conversation, several answer states are replaced by their delegation counterpart rather than drawn twice: Composing by D1 Brief, Working by D4, Needs a clarification by D5. Mark the answer state "no - covered by D4" in the map, and give it the coverage class `covered`. A recurring job (every night, every Monday) has a standing brief and plan: D1 and D2 are the settings the user reviews once and can see before each run. On such a board you may order the cards by time (before, while it works, when it hands back) instead of by the five moments, if that reads better; keep the state numbers.
 
 Sending the conversation to a person (state 14) is an effect outside the conversation: show what will be sent before it goes, inside card 14. That alone does not make state 5 apply.
 
 An action the product itself rejects for a business reason (not enough balance, a date already taken) is none of the four "no"s about the AI: show it as a screen of state 5, with the reason from the system and what the user can change.
 
-Five things cut across all of them: **interruption**, **memory**, **proactivity** (the AI speaks first), **cost** (credits, quotas, spend) and **sensitive moments** (the user writes about harm, distress or an emergency instead of a task). The first four go on the board as notes; a sensitive moment gets its own card wherever people can type freely, marked for review by its owner. See the end of `references/states.md`.
+Five things cut across all of them: **interruption**, **memory**, **proactivity** (the AI speaks first), **cost** (credits, quotas, spend) and **sensitive moments** (the user writes about harm, distress or an emergency instead of a task). The first four go on the board as notes; a sensitive moment gets its own card wherever people can type freely, marked for review by its owner (where they cannot type - a button, a background job - mark it not applicable; a short field for an agent's instructions does not count, but an agent that reads messages written by other people should still route a message about harm to a person instead of processing it). See the end of `references/states.md`.
 
 **If you can only design five:** Working, Doesn't know, Broke, Partial answer, and Needs my go-ahead when it acts (Handback when it works unattended). Those are where trust is lost fastest.
+
+Write big deliverables in parts: the spec section by section, and a large board as a body fragment that you then place into the file `new_board.py` made. One very long write can stall.
 
 ## Spec format
 
@@ -125,7 +128,9 @@ One block per state, in this order. Developers build from the trigger; without i
 - **Open question:** can the system tell "no documents" from "documents exist but the user has no access"?
 ```
 
-Translate the labels (Trigger, Shows, Copy...) when the team works in another language: Disparador, Muestra, Texto, Acciones, Conserva, Lleva a, Prueba, Medición, Pregunta abierta. The state names too: Primer uso, Redactando, Trabajando, Necesita una aclaración, Necesita mi visto bueno, Respuesta, Respuesta parcial, No está segura, No sabe, No puede, No debe, Falló, Corregida, Derivada a una persona. Address the team the way they wrote to you; the product's register is for the product's copy only.
+At medium and high stakes add **Announces:** what a screen-reader user hears when the state appears, and where focus goes ("Announced once, politely: 'No results. Three options follow.' Focus stays in the composer.").
+
+Translate the labels (Trigger, Shows, Copy...) when the team works in another language: Disparador, Muestra, Texto, Acciones, Conserva, Lleva a, Prueba, Medición, Pregunta abierta. The state names too: Primer uso, Redactando, Trabajando, Necesita una aclaración, Necesita mi visto bueno, Respuesta, Respuesta parcial, No está segura, No sabe, No puede, No debe, Falló, Corregida, Derivada a una persona. Address the team the way they wrote to you; the product's register is for the product's copy only. If their message gives no clue, write to the team in neutral Spanish (ustedes, no vosotros) and keep the product's register for the copy.
 
 **Keeps** is whatever the user would lose: typed text, attachments, the selection, the previous result, the work an agent had already done.
 
@@ -151,13 +156,14 @@ Match the size of what you deliver to what was asked. A board nobody asked for i
 
 | The user asks | Deliver |
 |---|---|
-| One question about one moment ("what should it say when it doesn't know?") | Answer in the message: the copy in their product's register, the trigger, the actions, what is kept - and one or two lines naming the neighbouring states they should check next. No files, unless they ask. |
+| One question about one moment ("what should it say when it doesn't know?") | Answer in the message: the copy in their product's register, the trigger, the actions, what is kept, one thing to measure - and a short list of what they should check next (the neighbouring states, and any urgent case that must be routed before this state can fire). Mark what you assumed in a few words. No files, no stakes table, no screen-reader line unless they ask. |
 | A quick opinion on something that exists ("is this error OK?", a screenshot) | In the message: what works, the worst three problems by harm, and the rewritten copy. Offer the full review. |
 | To design a feature, or to review one | The full set below. |
 
 For the full set:
 
 - **The state board** - one HTML page from `assets/template.html`: the coverage strip, the findings when it is a review, a card for every state you designed, the cross-cutting notes, the map, and the signals the system must expose. Final copy in place, ready to share or screenshot.
+- **The tests** - `state-tests.json`: one runnable case per state.
 - **The spec** - Markdown: what the system is known to do and what you assumed, the state map, one block per state, the permission table when it acts, the signals table, the test script, open questions.
 - **In your message** - the stakes you assumed, the assumptions that most change the design, and the questions you need answered. Keep the full list in the spec.
 

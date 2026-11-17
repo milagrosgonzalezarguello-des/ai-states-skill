@@ -27,10 +27,18 @@
   - A state that needs two screens (before / after confirming, answer failure / action failure) keeps ONE card
     with two .screen blocks, each under a .sub label. With three or more, make the card .wide and put each
     .sub + .screen pair in a <div> inside a .cols grid. Do not invent new state numbers.
-  - On a big board (an agent with 20 cards), use .grid.c2 / .grid.c3 and .span2 / .wide so rows have no holes.
+  - On a big board (an agent with 20 cards), use .grid.c2 / .grid.c3 and .span2 / .wide so rows have no holes:
+    .c2 for a section with an even number of cards, .c3 for multiples of three.
+  - A large board is easier to build as a body fragment you write in parts and then put into this file.
   - A sensitive-moment card uses the number S and ends with <p class="review">Review with [owner] before shipping</p>.
   - To show a state at phone width, wrap its .screen in <div class="phone">.
   - For a new design, delete the findings block and the map's Today column.
+  - Start a new board with scripts/new_board.py instead of copying this file by hand.
+  - Something shown on every screen (a chat header with a permanent help link): write it once on the first
+    screen and copy it; there is no include mechanism in a single HTML page.
+  - Make it playable: give each .screen a data-screen id and each button a data-go with the id it leads to
+    (see the FLOW PLAYER block at the end). The header then gets a "Try the flow" button, and the player flags
+    screens with no way out. Run scripts/check_board.py on the file before delivering.
   - A state is never told by colour alone: coloured messages carry a .tag with words.
 
   Components (mix them inside .screen):
@@ -53,6 +61,7 @@
   --fail-bg:#fdeeee; --fail:#a3262f;      /* broke: system failure */
   --warn-bg:#fff6dd; --warn:#7a5200;      /* unsure / partial */
   --ok:#0b7a52;
+  --care-bg:#f6eef8; --care:#6b2a7a;      /* sensitive moment: calm, not the error colour */
   --radius:14px;
 }
 *{box-sizing:border-box}
@@ -80,6 +89,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .cells .missing{border-left-color:var(--fail);background:var(--fail-bg)} .cells .missing b{color:var(--fail)}
 .cells .incomplete{border-left-color:#c98a00} .cells .incomplete b{color:var(--warn)}
 .cells .if{border-left-color:var(--info);border-style:dashed;border-left-style:solid} .cells .if b{color:var(--info)}
+.cells .covered{border-left-color:var(--ok);border-style:dashed;border-left-style:solid} .cells .covered b{color:var(--ok)}   /* replaced by a delegation state: "Covered by D4" */
 .cells .na{color:var(--muted);border-style:dashed} .cells .na b{color:var(--muted)}
 
 /* findings (reviews) */
@@ -90,6 +100,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .findings h3{font-size:1rem;margin:0}
 .findings p{margin:.15em 0 0;font-size:.92rem;color:var(--muted)}
 .sev{display:inline-block;text-align:center;font-size:.75rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:6px;padding:.25em .5em}
+.sev.test{background:#fff;color:var(--info);border:1px dashed var(--info)}   /* not observed: rated one level down, with the test that would confirm it */
 .sev.critical{background:var(--fail);color:#fff} .sev.major{background:var(--warn-bg);color:var(--warn);border:1px solid #ecd9a0} .sev.minor{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 
 /* moments and grid */
@@ -100,7 +111,9 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}   /* fixed columns for big boards */
 .state.span2{grid-column:span 2}
 .m-before{--m:var(--before)} .m-during{--m:var(--during)} .m-answer{--m:var(--answer)} .m-no{--m:var(--no)} .m-after{--m:var(--after)}
-.m-sens{--m:#7a3fb0} .m-deleg{--m:var(--deleg)} .m-notes{--m:var(--notes)}
+.m-sens{--m:var(--care)}
+.msg.care,.bar.care{background:var(--care-bg);border-color:#e3cfe8} .care .tag{color:var(--care)}
+.cells .review{border-left-color:var(--care)} .cells .review b{color:var(--care)} .m-deleg{--m:var(--deleg)} .m-notes{--m:var(--notes)}
 
 /* state card */
 .state{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;break-inside:avoid}
@@ -270,7 +283,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <h3><span class="n">3</span>Working</h3>
       <p class="q">Is it doing something? How long? Can I stop it?</p>
       <p class="trigger"><b>Trigger:</b> request sent, no complete response yet. Steps come from the retrieval service. <span class="tc">To confirm: does it emit step events?</span></p>
-      <div class="screen">
+      <div class="screen" data-screen="3" data-start>
         <div class="msg user">¿Cuántos días de vacaciones me corresponden?</div>
         <div class="msg ai">
           <ul class="steps">
@@ -279,7 +292,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
             <li>Redactando la respuesta</li>
           </ul>
         </div>
-        <div class="composer"><span>Escribí tu pregunta</span><button class="btn">Detener</button></div>
+        <div class="composer"><span>Escribí tu pregunta</span><button class="btn" data-go="9">Detener</button></div>
       </div>
       <p class="note">Under 1 s: no loader. Over 10 s: add "Podés seguir trabajando; te avisamos."</p>
     </article>
@@ -289,19 +302,19 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <p class="q">What exactly is it about to do?</p>
       <p class="trigger"><b>Trigger:</b> the assistant is about to call the "request leave" tool.</p>
       <p class="sub">Before confirming</p>
-      <div class="screen">
+      <div class="screen" data-screen="5a" data-label="Before confirming">
         <div class="msg ai">
           <p>Voy a mandar este pedido a tu jefe, Jorge Castro:</p>
           <div class="preview"><div class="lbl">Pedido de vacaciones</div>Del 12 al 16 de enero de 2027 · 5 días hábiles</div>
         </div>
         <div class="actions">
-          <button class="btn primary">Mandar pedido</button>
-          <button class="btn">Cambiar fechas</button>
-          <button class="btn ghost">No mandar</button>
+          <button class="btn primary" data-go="5b">Mandar pedido</button>
+          <button class="btn" data-go="5a">Cambiar fechas</button>
+          <button class="btn ghost" data-go="3">No mandar</button>
         </div>
       </div>
       <p class="sub">After confirming</p>
-      <div class="screen">
+      <div class="screen" data-screen="5b" data-label="After confirming" data-end>
         <div class="msg ai"><p>Listo: le mandé el pedido a Jorge Castro. Podés retirarlo desde <b>Mis pedidos</b> mientras no esté aprobado.</p></div>
         <div class="actions"><button class="btn">Ver el pedido</button><button class="btn ghost">Retirar pedido</button></div>
       </div>
@@ -318,16 +331,16 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <h3><span class="n">9</span>Doesn't know</h3>
       <p class="q">Is there no answer, or did it not look in the right place?</p>
       <p class="trigger"><b>Trigger:</b> retrieval returns no passage above the threshold.</p>
-      <div class="screen">
+      <div class="screen" data-screen="9">
         <div class="msg user">¿Hay licencia por mudanza?</div>
         <div class="msg ai info">
           <span class="tag">Sin resultados</span>
           <p>No encontré nada sobre licencia por mudanza en las políticas de RR. HH.</p>
         </div>
         <div class="actions">
-          <button class="btn">Reformular</button>
+          <button class="btn" data-go="3">Reformular</button>
           <button class="btn">Ver todas las políticas</button>
-          <button class="btn">Preguntarle a RR. HH.</button>
+          <button class="btn" data-go="5a">Pedir vacaciones</button>
         </div>
       </div>
       <p class="note">Neutral style, not the error style: nothing broke.</p>
@@ -338,13 +351,13 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <h3><span class="n">10</span>Can't do that</h3>
       <p class="q">Who or what can?</p>
       <p class="trigger"><b>Trigger:</b> text extraction returns fewer than 200 characters for the file.</p>
-      <div class="screen">
+      <div class="screen" data-screen="10">
         <div class="file">Contrato-marco-2027.pdf <span>48 pages · scanned</span></div>
         <div class="panel">
           <div class="panel-h">Summary <span class="pill stop">Not generated</span></div>
           <div class="panel-b">
             <div class="bar info"><span class="tag">Can't read this file</span><p>This PDF is a scan: it has images of pages, not text, so there is nothing to summarize.</p></div>
-            <div class="actions"><button class="btn primary">Upload a version with text</button><button class="btn">How to tell if a PDF has text</button></div>
+            <div class="actions"><button class="btn primary" data-go="3">Upload a version with text</button><button class="btn">How to tell if a PDF has text</button></div>
           </div>
         </div>
       </div>
@@ -363,7 +376,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <h3><span class="n">D4</span>Working unattended</h3>
       <p class="q">Is it still on track? Do I need to watch?</p>
       <p class="trigger"><b>Trigger:</b> a run is active; each tool call emits an event with its result.</p>
-      <div class="screen">
+      <div class="screen" data-screen="D4">
         <div class="panel">
           <div class="panel-h">Reconciling March invoices <span class="pill run">Running · 142 of 215</span></div>
           <div class="panel-b">
@@ -372,7 +385,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
               <li><time>10:42</time><span>Invoice 0141: amount differs by $ 12.00. Set aside for you.</span><a href="#">Open</a></li>
               <li><time>10:41</time><span>Matched invoice 0140 to payment 88-1927</span><a href="#">Undo</a></li>
             </ul>
-            <div class="actions"><button class="btn">Pause</button><button class="btn">Stop and keep what's done</button></div>
+            <div class="actions"><button class="btn" data-go="D5">Pause</button><button class="btn" data-go="D7">Stop and keep what's done</button></div>
           </div>
         </div>
       </div>
@@ -382,12 +395,12 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <h3><span class="n">D5</span>Needs you</h3>
       <p class="q">What is it waiting for, and what happens if I don't answer?</p>
       <p class="trigger"><b>Trigger:</b> the agent reaches an action in the "asks first" column, or a case outside its brief.</p>
-      <div class="screen">
+      <div class="screen" data-screen="D5">
         <ul class="queue">
           <li>
             <div class="who">Reconciling March invoices · waiting 12 min · the rest continues meanwhile</div>
             Invoice 0141 says $ 1,212.00 and the payment is $ 1,200.00. I recommend matching them and recording a $ 12.00 difference.
-            <div class="actions"><button class="btn primary">Match and record difference</button><button class="btn">Leave unmatched</button><button class="btn ghost">Open both</button></div>
+            <div class="actions"><button class="btn primary" data-go="D4">Match and record difference</button><button class="btn" data-go="D4">Leave unmatched</button><button class="btn ghost">Open both</button></div>
           </li>
         </ul>
       </div>
@@ -397,7 +410,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
       <h3><span class="n">D7</span>Handback</h3>
       <p class="q">What did it do, what did it not do, and where do I look first?</p>
       <p class="trigger"><b>Trigger:</b> the run ends, completely or not.</p>
-      <div class="screen">
+      <div class="screen" data-screen="D7" data-end>
         <div class="panel">
           <div class="panel-h">Reconciling March invoices <span class="pill ok">Finished 11:08</span></div>
           <div class="panel-b">
@@ -438,7 +451,9 @@ h2{font-size:1.25rem;margin:0 0 14px}
     <!-- A sensitive moment is not a note: it gets a card of its own, in its own section placed first or last:
          <section class="moment m-sens"><h2>Sensitive moment</h2><div class="grid"><article class="state wide">
          <h3><span class="n">S</span>...</h3> ... <p class="review">Review with [owner] before shipping</p></article></div></section>
-         In the coverage strip it is its own cell (class "if", label "Owner review") and is not counted in the total. -->
+         In the coverage strip it is its own cell (class "review", label "Designed · owner review") and is not counted in the total.
+         Its screens use .msg.care / .bar.care. A screen whose only next step is outside the product (call a number,
+         go to a desk) is marked data-end. -->
   </div>
 </section>
 
@@ -467,5 +482,130 @@ h2{font-size:1.25rem;margin:0 0 14px}
 <p class="foot">Names, numbers and policy contents on this board are examples and are marked as such in the spec. The full list of assumptions and open questions is in the spec.</p>
 
 </main>
+
+<!-- ============ FLOW PLAYER: keep this block as it is. It turns the board into a clickable prototype. ============
+  Give each .screen an id:            <div class="screen" data-screen="5a" data-label="Before confirming">
+  Wire each button to where it goes:  <button class="btn primary" data-go="5b">Mandar pedido</button>
+  Mark the first screen:              data-start     (otherwise the first screen on the board is the start)
+  Mark a screen the system opens by itself (a notification, a failed overnight run): data-entry
+  Mark a screen where the flow rightly ends (the user leaves, or goes on outside the feature):   data-end
+  A screen whose next step happens outside the product (a call, a visit, closing the panel): data-end.
+  To move a chat forward, the next user message goes in a .sim row too: <button data-go="9">asks about moving house</button>.
+  Outcomes the SYSTEM decides (the answer arrives, it fails, the limit is hit) have no user button. Add a row
+  only the prototype shows:  <div class="sim">Then the system... <button data-go="6">answers</button>
+  <button data-go="12">fails</button></div>  It is hidden on the board and shown in the player.
+  The player lists screens with no way out and screens nothing leads to: fix them or mark them.
+  Translate PLAYER_TEXT below into the board's language. -->
+<style>
+.play-open{font:inherit;font-size:.95rem;font-weight:600;margin-top:16px;border-radius:999px;padding:.5em 1.2em;border:0;background:var(--brand);color:#fff;cursor:pointer}
+.player{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;grid-template-columns:280px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
+.player.on{display:grid}
+.player header{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+.player header b{font-size:1.05rem;margin-right:auto}
+.player nav{overflow:auto;border-right:1px solid var(--line);background:var(--card);padding:8px}
+.player nav button{display:block;width:100%;text-align:left;font:inherit;font-size:.86rem;border:0;background:none;border-radius:8px;padding:.4em .6em;cursor:pointer;color:var(--ink)}
+.player nav button small{display:block;color:var(--muted)}
+.player nav button.cur{background:var(--user);font-weight:600}
+.player nav button.warn span::after{content:" !";color:var(--fail);font-weight:700}
+.player .stage{overflow:auto;padding:28px 16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.player .stage h2{margin:0;font-size:1.1rem}
+.player .stage .frame{width:min(100%,460px)}
+.player .stage .frame.wide{width:min(100%,760px)}
+.player .trail{font-size:.82rem;color:var(--muted);max-width:760px;text-align:center}
+.sim{display:none}
+.player .sim{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:.4em .6em}
+.player .sim button{font:inherit;font-size:.8rem;border:1px solid var(--line);border-radius:999px;background:#fff;padding:.15em .7em;cursor:pointer}
+.player [data-go]{box-shadow:0 0 0 2px rgba(31,79,216,.25)}
+.player .unwired{outline:2px dashed var(--fail);outline-offset:2px}
+.player footer{grid-column:1/-1;padding:8px 16px;border-top:1px solid var(--line);background:var(--card);font-size:.84rem;color:var(--muted)}
+.player footer b{color:var(--fail)}
+.player footer .okk{color:var(--ok);font-weight:600}
+@media (max-width:760px){.player{grid-template-columns:1fr}.player nav{display:none}}
+@media print{.play-open,.player{display:none!important}}
+</style>
+<div class="player" id="player" role="dialog" aria-modal="true" aria-label="Flow player">
+  <header><b id="p-title"></b><button class="btn" id="p-back"></button><button class="btn" id="p-restart"></button><button class="btn primary" id="p-close"></button></header>
+  <nav id="p-nav"></nav>
+  <div class="stage"><h2 id="p-name"></h2><div class="frame" id="p-frame"></div><div class="trail" id="p-trail"></div></div>
+  <footer id="p-check"></footer>
+</div>
+<script>
+(function(){
+  var PLAYER_TEXT = {
+    open: "Try the flow", title: "Flow", back: "Back", restart: "Restart", close: "Close",
+    path: "Path", ok: "Every screen has a way out and can be reached.",
+    dead: "No way out", orphan: "Nothing leads here", missing: "Button leads to a screen that does not exist",
+    unwired: "This button is not wired to a screen"
+  };
+  var T = PLAYER_TEXT, screens = {}, order = [];
+  document.querySelectorAll('[data-screen]').forEach(function(el){
+    if (el.closest('#player')) return;
+    var id = el.getAttribute('data-screen'), card = el.closest('.state');
+    var h = card && card.querySelector('h3');
+    screens[id] = { el: el, id: id, label: el.getAttribute('data-label') || '', state: h ? Array.prototype.map.call(h.childNodes, function(n){ return n.textContent.trim(); }).filter(Boolean).join(' ') : id,
+      wide: !!el.querySelector('.panel,.perm,.cols'), end: el.hasAttribute('data-end'),
+      gos: Array.prototype.map.call(el.querySelectorAll('[data-go]'), function(b){ return b.getAttribute('data-go'); }) };
+    order.push(id);
+  });
+  if (!order.length) return;
+  var startEl = document.querySelector('[data-screen][data-start]');
+  var start = startEl ? startEl.getAttribute('data-screen') : order[0];
+
+  // flow check
+  var incoming = {}, problems = {};
+  function flag(id, what){ (problems[id] = problems[id] || []).push(what); }
+  order.forEach(function(id){ screens[id].gos.forEach(function(g){ if (screens[g]) incoming[g] = true; else flag(id, T.missing + ' (' + g + ')'); }); });
+  order.forEach(function(id){
+    var s = screens[id];
+    if (!s.gos.length && !s.end) flag(id, T.dead);
+    if (id !== start && !incoming[id] && !s.el.hasAttribute('data-entry')) flag(id, T.orphan);
+  });
+  window.BOARD_FLOW = { screens: order, start: start, problems: problems };   // read by scripts/check_board.py --render and by tests
+
+  var P = document.getElementById('player'), trail = [];
+  var $ = function(i){ return document.getElementById(i); };
+  $('p-title').textContent = T.title; $('p-back').textContent = T.back; $('p-restart').textContent = T.restart; $('p-close').textContent = T.close;
+  var nav = $('p-nav');
+  order.forEach(function(id){
+    var s = screens[id], b = document.createElement('button');
+    b.innerHTML = '<span></span><small></small>'; b.firstChild.textContent = s.state; b.lastChild.textContent = id + (s.label ? ' · ' + s.label : '');
+    if (problems[id]) { b.className = 'warn'; b.title = problems[id].join('; '); }
+    b.onclick = function(){ trail = []; show(id); };
+    s.nav = b; nav.appendChild(b);
+  });
+  var keys = Object.keys(problems);
+  $('p-check').innerHTML = keys.length
+    ? keys.map(function(id){ return '<b>' + id + '</b>: ' + problems[id].join('; '); }).join(' &nbsp;·&nbsp; ')
+    : '<span class="okk">' + T.ok + '</span>';
+
+  function show(id){
+    var s = screens[id]; if (!s) return;
+    trail.push(id);
+    order.forEach(function(k){ screens[k].nav.classList.toggle('cur', k === id); });
+    $('p-name').textContent = s.state + (s.label ? ' · ' + s.label : '');
+    var f = $('p-frame'); f.className = 'frame' + (s.wide ? ' wide' : ''); f.innerHTML = '';
+    var c = s.el.cloneNode(true); c.removeAttribute('data-screen'); f.appendChild(c);
+    c.querySelectorAll('button,a').forEach(function(b){
+      var g = b.getAttribute('data-go');
+      if (g && screens[g]) b.onclick = function(e){ e.preventDefault(); show(g); };
+      else { b.onclick = function(e){ e.preventDefault(); }; if (b.matches('.btn,.chips button') && !b.disabled && !s.end) { b.classList.add('unwired'); b.title = T.unwired; } }
+    });
+    $('p-trail').textContent = T.path + ': ' + trail.join(' → ');
+    s.nav.scrollIntoView({ block: 'nearest' });
+  }
+  $('p-back').onclick = function(){ if (trail.length > 1) { trail.pop(); show(trail.pop()); } };
+  $('p-restart').onclick = function(){ trail = []; show(start); };
+  function close(){ P.classList.remove('on'); document.body.style.overflow = ''; }
+  $('p-close').onclick = close;
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+  var open = document.createElement('button');
+  open.className = 'play-open'; open.textContent = '▶ ' + T.open;
+  open.onclick = function(){ P.classList.add('on'); document.body.style.overflow = 'hidden'; trail = []; show(start); };
+  var head = document.querySelector('.head'); if (head) head.appendChild(open);
+  if (/[?&#]play\b/.test(location.search + location.hash)) open.onclick();
+})();
+</script>
+<!-- ============ END FLOW PLAYER ============ -->
+
 </body>
 </html>

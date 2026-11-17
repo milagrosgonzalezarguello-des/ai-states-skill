@@ -176,6 +176,7 @@ def main() -> int:
         print(f"Not found: {src}", file=sys.stderr)
         return 2
     out_dir = long_path(Path(a.png).parent if str(Path(a.png).parent) else Path("."))
+    out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / Path(a.png).name
     if out.exists():
         out.unlink()

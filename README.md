@@ -2,15 +2,15 @@
 
 **A Claude skill that designs everything an AI feature shows besides the good answer.**
 
-![AI States demo](docs/demo.gif)
+![AI States: a state board that becomes a clickable prototype](docs/demo.gif)
 
 Teams design the demo: the user asks, the AI answers, everyone claps. Then real people use it. They ask something it cannot do, it takes fourteen seconds, it answers with total confidence and is wrong, and the product shows a spinner and "Something went wrong".
 
 Now AI also *acts*: it sends, books, edits and keeps working while nobody watches. The undesigned moments got worse. It did something, and the user cannot tell what.
 
-**AI States** makes Claude design those moments: 14 states for AI that answers, 12 for AI that acts, each with exact copy, the system signal that triggers it, a test input and what to measure.
+**AI States** makes Claude design those moments: 14 states for AI that answers, 12 for AI that acts, each with exact copy, the system signal that triggers it, a test input and what to measure. The board it draws is also a **clickable prototype**, and the tests come as a file engineering can run.
 
-[**Download the skill**](../../releases/latest) · [Example: an agent](examples/inbox-agent/) · [Example: a chat on a phone](examples/study-assistant/) · [Español](#español)
+[**Download the skill**](../../releases/latest) · [Example: an agent (open `state-board.html` and press *Try the flow*)](examples/inbox-agent/) · [Example: a chat on a phone](examples/study-assistant/) · [Español](#español)
 
 ## What you get
 
@@ -19,10 +19,12 @@ Describe your AI feature (or paste what you already shipped) and Claude returns:
 | | |
 |---|---|
 | **A state board** | One HTML page with a card per state, showing the real component with final copy. Opens in any browser, ready to share or screenshot. |
+| **A clickable prototype** | The same page: press *Try the flow* and walk from screen to screen. It flags screens with no way out, which is where flow mistakes hide. |
 | **A coverage strip** | Which states are designed, which fall into a generic message, which are missing. The gaps are visible at a glance. |
 | **A spec developers can build** | For each state: trigger, what it shows, copy, actions, what is kept, where it goes next. |
 | **A signals table** | What the system must expose for those states to exist. Often the most useful thing engineering gets. |
-| **A test script and measures** | One input that provokes each state, and the event to log for it. |
+| **Runnable tests** | `state-tests.json`: one input per state with what must and must not appear, ready for an evaluation harness. |
+| **Measures** | The event to log for each state, so you can see how often it happens in production. |
 | **For agents: a permission table** | What it does without asking, what it asks first, what it never does. |
 
 ![Example state board](docs/board.png)
@@ -54,6 +56,16 @@ Wherever people can type freely, someone will eventually write about harm, distr
 ### It answers at the size you ask
 
 Ask one question ("what should it say when it doesn't know?") and you get the copy, the trigger and the next actions in the chat. Ask for a design or a review and you get the full board and spec.
+
+## Does it work?
+
+Tested on five realistic briefs (an HR chat assistant, a review of a shipped "Summarize with AI" button, an overnight invoicing agent, a single copy question, a student assistant where people can type anything), each run twice with the skill and once without, graded against written criteria.
+
+| | With the skill | Without |
+|---|---|---|
+| Criteria met | **63 of 64** | 23 of 32 |
+
+In a blind test with nine competing skills, it was chosen for all 10 requests that needed it and for none of the 10 look-alikes that did not. These are small samples; the graders' notes and every output are in the release.
 
 ## Ten rules it checks first
 
@@ -99,15 +111,19 @@ ai-states/
 ├── SKILL.md                    the method
 ├── references/
 │   ├── states.md               the 14 answer states, sensitive moments: pattern, anti-pattern, copy
-│   ├── delegation.md           the 12 delegation states, autonomy levels, permissions
+│   ├── delegation.md           the 12 delegation states, autonomy, permissions, several agents at once
 │   ├── failure-modes.md        how AI fails, and how serious each gap is
 │   ├── surfaces.md             chat, inline, one-shot, search, agent, voice, small screens
+│   ├── voice.md                spoken assistants: silence, barge-in, misheard input
 │   ├── copy.md                 how to word each state
-│   ├── measure.md              test script and what to log
+│   ├── measure.md              runnable tests (state-tests.json) and what to log
 │   ├── anti-patterns.md        what to avoid, and what to do instead
 │   └── checklist.md            the review checklist
-├── assets/template.html        the state board
-└── scripts/screenshot.py       renders the board to an image
+├── assets/template.html        the state board and its flow player
+└── scripts/
+    ├── new_board.py            starts a board (English or Spanish)
+    ├── check_board.py          dead ends, leftovers, contrast, untested states
+    └── screenshot.py           renders the board to an image
 ```
 
 ## More skills
@@ -137,10 +153,16 @@ Ahora la IA además *actúa*: envía, reserva, edita y sigue trabajando sin que 
 - **Una especificación** que desarrollo puede construir: disparador, qué se muestra, texto, acciones, qué se conserva.
 - **Una tabla de señales** que el sistema tiene que exponer.
 - **Un guion de pruebas** y qué registrar para cada estado.
+- **Un prototipo navegable**: el mismo tablero se recorre pantalla por pantalla y marca las que no tienen salida.
+- **Pruebas que se pueden correr**: un archivo con una entrada por estado y qué tiene que aparecer y qué no.
 - **Para agentes, una tabla de permisos**: qué hace sin preguntar, qué pregunta antes y qué no hace nunca.
 - **El estado que nadie diseña**: qué pasa cuando alguien escribe sobre un daño, una urgencia o que no da más. Lo dibuja con texto real y lo marca para que lo revise quien corresponde.
 
 Si le hacés una sola pregunta, responde en el chat. Si le pedís un diseño o una revisión, entrega el tablero completo.
+
+### ¿Funciona?
+
+En cinco casos realistas, corridos dos veces con la skill y una sin ella, cumplió **63 de 64** criterios con la skill y 23 de 32 sin ella. En una prueba a ciegas contra nueve skills parecidas, se eligió en los 10 pedidos que la necesitaban y en ninguno de los 10 que no.
 
 ### Cómo instalarla
 

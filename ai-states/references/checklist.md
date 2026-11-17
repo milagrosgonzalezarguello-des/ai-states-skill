@@ -73,6 +73,9 @@ A line that asks for something the system does not have (a usage limit, a human 
 
 ## Test and measure
 
+- [ ] `scripts/check_board.py` reports nothing to fix.
+- [ ] Every button on the board leads to a screen, or its screen is marked as an end; you played the main path and one failure path in the flow player.
+
 - [ ] There is one test input for each state that applies, including one that plants an instruction in the content when the AI reads content.
 - [ ] Each state names the event to log, so the team can see how often it happens.
 

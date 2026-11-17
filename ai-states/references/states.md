@@ -71,9 +71,12 @@ A state that applies only if the system has a signal you could not confirm is ma
 | 1-10 s | That it is working, and on what if the system knows ("Buscando en 3 documentos..."). Stream the answer if the system streams. |
 | Over 10 s | The steps as they happen, a way to stop, and what the user can do meanwhile. For minutes-long work: let them leave and notify them. |
 
+The thresholds are for a feature with no usual time. If the product has one ("usually 3 to 12 seconds"), "taking longer than usual" starts after the usual maximum, not at a fixed 10 s - otherwise ordinary answers get the slow message. The stop control is there from the start of any wait longer than two seconds, not only after the slow message.
+
 - Step names are real steps the system reports, not a scripted animation. Fake progress is a lie the user will notice the day it fails at "Analysing...".
 - While streaming, keep the page from jumping and do not steal focus; let the user scroll away.
 - **Stop** stays in the same place as **Send**.
+- Decide what Stop keeps, and say it on the screen: for a long job, what is already done is kept and shown as a partial result (state 7, marked as partial), never thrown away and never shown as if complete.
 
 **Avoid**
 - A bare spinner past two seconds.
@@ -206,13 +209,14 @@ The four "no"s. Decide which one it is from the trigger, never from a catch-all.
 
 Before this state can fire, urgent requests must already have been routed: a stolen card, a safety problem or a sensitive moment (see the end of this file) must never land in "I couldn't find that".
 
-Name what was looked for and where, so the user can tell "it does not exist" from "it looked in the wrong place". If the user rephrases and it is still not found, do not repeat the message: offer the person or the plain documents.
+Name what was looked for and where, so the user can tell "it does not exist" from "it looked in the wrong place".
 
 **The user is asking:** Is there no answer, or did it not look in the right place?
 
 **Trigger:** nothing relevant retrieved; the question is in scope but the information is not there.
 
 **Pattern**
+- Second miss: if the user rephrases and it is still not found, do not repeat the message. Change the offer: "Tampoco encontré eso. ¿Le paso la pregunta a una persona?" with the person and the plain documents as the actions.
 - Say what it looked for and where, so the user can tell a bad search from a real absence.
 - Neutral style: the answer style, not the error style. Nothing broke.
 - Next steps: rephrase, widen the search, the place or person that would know.
@@ -300,7 +304,7 @@ Name what was looked for and where, so the user can tell "it does not exist" fro
 
 **The user is asking:** Did it take my correction? Will it happen again?
 
-**Trigger:** the user says the answer is wrong, edits it, regenerates, presses thumbs-down, or undoes an action.
+**Trigger:** the user says the answer is wrong, edits it, regenerates, presses thumbs-down, or undoes an action. A user withdrawing or changing a request they made on purpose (cancelling a leave request) is not a correction: it belongs to the action's own flow (state 5 or D9), and is measured apart from corrections.
 
 **Pattern**
 - Acknowledge in one line and act: a corrected answer, the action undone, the report sent. No grovelling.
@@ -386,12 +390,16 @@ Design it like a state. An undesigned sensitive moment does more harm than a dra
 **Pattern:**
 - Drop the task. No summary, no sources, no "here are some policies", no examples of what else to ask.
 - One plain line that takes in what was said, without evaluating it or the person. No diagnosis, no advice, no "I understand how you feel".
-- The real route, first and specific: who, how, and when they answer. If the route has hours, say what to do outside them. If there is an emergency number for this country or company, it goes above everything else when life or safety is at risk.
+- The real route, first and specific: who, how, and when they answer. If the route has hours, say what to do outside them.
+- Order by urgency, and keep the order on screen: when life or safety is at risk, the public emergency number comes first, then the organisation's urgent line, then the support team. A button above the line that tells the user what to do first contradicts it.
+- Match the route to the need. A security or reception line is not a mental-health service: for distress outside the support team's hours, the route is a crisis or listening line if one exists; ask the owner which, and do not send a distressed person to security by default.
 - Say who will and will not see this conversation, only if you know. A wrong reassurance here is worse than none.
 - No probing questions. The product is not the one who should take the account.
 - Nothing is done on the user's behalf without them choosing it: no ticket opened automatically, nobody notified.
 - The message is not offered thumbs, regenerate or "was this helpful?".
-- The conversation can continue normally afterwards if the user goes on to something else.
+- The conversation can continue normally afterwards if the user goes on to something else: the composer stays enabled.
+- A real question in the same message is kept one press away ("Your question about the essay is still here"), not answered inside the card: the card shows no sources, no answer and no feedback controls, in every variant.
+- Never draw a phone number that looks real if you were not given it. Draw the button with its label and no number, marked "to confirm".
 - A message that mixes it with a real question, or that may be a figure of speech ("this essay is killing me, when is it due?"): one short line with the route, and the question answered or kept one press away. This is what makes catching too much cheap.
 - Detection will miss some. A permanent, quiet entry point to the same route ("Support and urgent help") stays visible in the feature, whatever the model says.
 - The card is fixed copy, not generated: it must be the same every time and still appear when the model is down or a usage limit is reached.
@@ -404,6 +412,6 @@ Design it like a state. An undesigned sensitive moment does more harm than a dra
 | Route | "Puede hablar con [equipo] por [canal], de [horario]. Fuera de ese horario: [alternativa]." | "Podés hablar con [equipo] por [canal], de [horario]. Fuera de ese horario: [alternativa]." | "You can reach [team] by [channel], [hours]. Outside those hours: [alternative]." |
 | Action | **Ver cómo contactarlos** | **Ver cómo contactarlos** | **See how to reach them** |
 
-The brackets show where the product's facts go. On the board, fill them with what the user told you (the team, its hours, its line) or with a realistic example marked "to confirm"; never leave brackets on a card. If you do not know the country, do not guess an emergency number: write the line with the organisation's own urgent contact and list the public emergency number as the first open question for the owner.
+The brackets show where the product's facts go. On the board, fill them with what the user told you (the team, its hours, its line) or with a realistic example marked "to confirm"; never leave brackets on a card. If you do not know the country, do not guess an emergency number: draw the button as **Llamar a emergencias** / **Call emergency services** with no number, mark it "to confirm: the number for this country", and list it as the first open question for the owner.
 
 **Measure:** how often it fires and whether the route was opened - never the content of the message in ordinary analytics.

@@ -29,6 +29,40 @@ For agents add: a task that needs a permission it does not have (D3), a task tha
 
 The planted-instruction test belongs in every script for a feature that reads documents, e-mail or the web.
 
+## The tests as a file
+
+Deliver the test script as `state-tests.json` as well, so it can be run - by hand today, by an evaluation harness tomorrow. One object per test:
+
+```json
+{
+  "feature": "HR policy assistant",
+  "tests": [
+    {
+      "id": "T09",
+      "state": "9 Doesn't know",
+      "setup": "Signed in as any employee. No policy mentions moving house.",
+      "input": "¿Hay licencia por mudanza?",
+      "expect": {
+        "shows": "The not-found message, neutral style",
+        "must_include": ["No encontré", "licencia por mudanza"],
+        "must_not_include": ["error", "Lo siento"],
+        "actions": ["Reformular", "Ver todas las políticas", "Preguntarle a RR. HH."],
+        "signal": "retrieval score below threshold",
+        "event": "answer_not_found"
+      }
+    }
+  ]
+}
+```
+
+- `state` starts with the state's number, as on the board. A test about something that is not one state (a planted instruction, leaving mid-run, the model being down) uses the state the user should end up in, and says what it is testing in `id` ("T-inject", "T-leave").
+- `setup` is whatever must be true first: the account, a document, a simulated failure (a timeout, the network off).
+- `must_include` and `must_not_include` are short strings a script can look for; `shows` is for a person or a model grading the result.
+- States that need a condition rather than an input (offline, a usage limit, a second failure) put the condition in `setup` and may leave `input` as an ordinary question.
+- Include the adversarial ones: an instruction planted in a document, a request just outside the scope, the same question asked twice.
+
+These tests check that the feature lands in the right state. They do not check that the answers are correct; that is a separate evaluation.
+
 ## Measures
 
 One or two numbers per state, so the team learns which states users actually reach and whether the design works. Name the event and what a bad value means.

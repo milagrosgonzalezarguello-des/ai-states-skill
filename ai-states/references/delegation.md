@@ -196,6 +196,19 @@ Use this map, in addition to the fourteen answer states, whenever the AI does wo
 
 ---
 
+## Several agents at once
+
+When the user has more than one agent or task running, or agents hand work to each other, three things change.
+
+- **The surface is a list.** One row per task: what it is, its state in a word (running, waiting for you, stopped, done), since when, and what it has used. Sorted with "waiting for you" on top. A chat cannot show this.
+- **One queue for requests.** Everything any agent needs from the user arrives in one place, each request naming the task it belongs to, so nothing waits unseen in a thread nobody opened.
+- **Responsibility stays visible.** When one agent's output feeds another, the handback says which agent did what, and a failure names where it started. "The pipeline failed" is the multi-agent version of "Something went wrong".
+
+Also decide and state:
+- what happens when two agents want to change the same thing (the second one stops and asks; it never overwrites silently);
+- whether a permission given to one agent extends to an agent it calls (default: no - it asks);
+- the limit that applies to the whole group (spend, documents, messages sent), not only to each one.
+
 ## Autonomy levels
 
 Pick a level per kind of action, not per product. The same agent can file a draft on its own and still need approval to send it.
@@ -214,6 +227,15 @@ Choose with two questions: **can it be undone?** and **how bad is a mistake?**
 |---|---|---|
 | **Reversible** | Level 4-5 | Level 3-4, undo prominent |
 | **Irreversible** | Level 3 | Level 1-3, never above 3 |
+
+## Reversible for a while
+
+Many actions can be undone only until a moment: a scheduled payment until the cut-off, a sent e-mail during a short undo window, an order until it ships. Treat them as reversible until that moment and irreversible after it.
+
+- The approval (state 5) says the deadline in the same sentence as the action: "Schedule 12 payments · each can be cancelled until 2 pm on its date".
+- The handback and the activity log show the deadline next to each item while it is still open, and the undo control disappears - with a line saying why - once it has passed.
+- Plan the timing so the user has a real chance to use the window: an agent that schedules a payment at 1:55 pm for the same day has turned a reversible action into an irreversible one.
+- In the permission table, put these in "asks first" unless the window is long enough for the user to see them during an ordinary day.
 
 ## The permission table
 

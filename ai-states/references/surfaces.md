@@ -63,7 +63,7 @@ The AI does things: sends, books, edits records, runs code - sometimes while the
 
 ## Voice
 
-Spoken, no screen or a small one.
+Spoken, no screen or a small one. The essentials are here; for a voice product read `voice.md`.
 
 - There is nothing to scan, so every state is shorter and options are at most three.
 - Working is a sound or a short phrase; silence over two seconds feels broken.
@@ -81,7 +81,7 @@ Many people who use an AI feature at work are not at a desk: drivers, warehouse 
 - Unstable connections make "offline" and "sent, not yet answered" frequent states, not edge cases.
 - Dictation is common: design for input with no punctuation and wrong words, and let the user confirm what was understood before anything is acted on.
 
-If the board is drawn for desktop, say so, and draw at least the go-ahead and one "no" state at phone width.
+If the board is drawn for desktop, say so, and draw at phone width at least the screens with the most to fit: the go-ahead if there is one, an answer with sources, one "no" state and the sensitive moment. If most users are on phones, draw every screen at phone width.
 
 ## Mixed surfaces
 

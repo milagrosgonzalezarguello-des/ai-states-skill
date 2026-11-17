@@ -66,6 +66,7 @@ A general disclaimer belongs once, at first use. A specific warning belongs on t
 ## Buttons and labels
 
 - Verb first, the object when it is not obvious: **Enviar a 14 personas**, **Deshacer**, **Ver fuente**.
+- **Regenerar** / **Regenerate** only where a different answer is welcome (writing, ideas). An answer about facts or rules should not change when asked again: offer **Reformular** or a source instead.
 - **Regenerar** / **Regenerate** for another answer to the same request; **Reintentar** / **Try again** after a failure. They are different actions; do not use one word for both.
 - **Detener** / **Stop**, not **Cancelar**, while it is generating: cancel suggests the request is discarded, stop keeps what there is.
 - Feedback: **Útil** / **No útil**, or icons with those names as accessible labels.
