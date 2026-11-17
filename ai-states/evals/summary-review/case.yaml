@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: summary-review
+expected_outcome: |
+  A review that maps which states are designed, generic or missing, orders the gaps by harm for a high-stakes legal use, and delivers designed fixes (board cards with final copy) for at least the three worst gaps, including the scanned-PDF case and sources by page.

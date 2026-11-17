@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>State board - Inbox Agent (Ledgerly)</title>
+<style>
+:root{
+  --ink:#1b2433; --muted:#5b6678; --line:#d9e0ea; --bg:#f4f6fa; --card:#ffffff;
+  --brand:#1f4fd8;                 /* the product's main colour */
+  --user:#e8eefc;                  /* user bubble */
+  --before:#6b4fd8; --during:#0b7a75; --answer:#1f4fd8; --no:#9a5b00; --after:#5b6678; --deleg:#a3246b; --notes:#3b4658;
+  --info-bg:#eef3fb; --info:#2b4a7d;      /* doesn't know / can't: neutral */
+  --rule-bg:#f6f1e7; --rule:#7a5200;      /* won't: a rule applied */
+  --fail-bg:#fdeeee; --fail:#a3262f;      /* broke: system failure */
+  --warn-bg:#fff6dd; --warn:#7a5200;      /* unsure / partial */
+  --ok:#0b7a52;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.5}
+main{max-width:1400px;margin:0 auto;padding:40px 28px 80px}
+h2{font-size:1.25rem;margin:0 0 14px}
+
+/* header */
+.head h1{font-size:2rem;line-height:1.2;margin:0 0 .2em}
+.head p{margin:.2em 0;color:var(--muted);font-size:1.05rem;max-width:70ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}
+.meta li{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.25em .9em;font-size:.9rem}
+.meta b{font-weight:600}
+
+/* coverage strip */
+.coverage{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.coverage .sum{margin:0 0 12px;font-size:1.05rem}
+.coverage .sum b{font-size:1.5rem;font-weight:700;margin-right:.15em}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.cells li{border:1px solid var(--line);border-left-width:6px;border-radius:8px;padding:.4em .6em;font-size:.86rem;line-height:1.3}
+.cells b{display:block;font-size:.72rem;letter-spacing:.03em;text-transform:uppercase}
+.cells .designed{border-left-color:var(--ok)} .cells .designed b{color:var(--ok)}
+.cells .generic{border-left-color:#c98a00;background:var(--warn-bg)} .cells .generic b{color:var(--warn)}
+.cells .missing{border-left-color:var(--fail);background:var(--fail-bg)} .cells .missing b{color:var(--fail)}
+.cells .na{color:var(--muted);border-style:dashed} .cells .na b{color:var(--muted)}
+
+/* findings (reviews) */
+.findings{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.findings ol{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.findings li{display:grid;grid-template-columns:6.5rem 1fr;gap:12px;align-items:start;padding-top:10px;border-top:1px solid var(--line)}
+.findings li:first-child{border-top:0;padding-top:0}
+.findings h3{font-size:1rem;margin:0}
+.findings p{margin:.15em 0 0;font-size:.92rem;color:var(--muted)}
+.sev{display:inline-block;text-align:center;font-size:.75rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:6px;padding:.25em .5em}
+.sev.critical{background:var(--fail);color:#fff} .sev.major{background:var(--warn-bg);color:var(--warn);border:1px solid #ecd9a0} .sev.minor{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+
+/* moments and grid */
+.moment{margin-top:44px}
+.moment>h2{display:flex;align-items:baseline;gap:.6em;padding-bottom:8px;border-bottom:3px solid var(--m)}
+.moment>h2 span{font-size:.9rem;font-weight:400;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;align-items:start}
+.m-before{--m:var(--before)} .m-during{--m:var(--during)} .m-answer{--m:var(--answer)} .m-no{--m:var(--no)} .m-after{--m:var(--after)}
+.m-deleg{--m:var(--deleg)} .m-notes{--m:var(--notes)}
+
+/* state card */
+.state{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;break-inside:avoid}
+.state>h3{display:flex;align-items:center;gap:.55em;font-size:1.08rem;margin:0}
+.state>h3 .n{flex:none;display:grid;place-items:center;min-width:1.75rem;height:1.75rem;padding:0 .35em;border-radius:999px;background:var(--m);color:#fff;font-size:.85rem;font-weight:700}
+.state .q{margin:.35em 0 .1em;color:var(--muted);font-style:italic}
+.state .trigger{margin:.5em 0 .9em;font-size:.88rem;color:var(--ink);background:var(--bg);border-radius:8px;padding:.45em .7em}
+.state .trigger b{font-weight:600}
+.state .trigger .tc{color:var(--warn);font-weight:600}          /* "to confirm" */
+.state .note{margin:.8em 0 0;font-size:.88rem;color:var(--muted)}
+.state .sub{margin:14px 0 6px;font-size:.75rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.state.wide{grid-column:1/-1}
+.state .fixes{margin:.6em 0 0;font-size:.82rem;color:var(--fail);font-weight:600}   /* review: which finding this card fixes */
+
+/* the screen: the component in this state */
+.screen{border:1px solid var(--line);border-radius:12px;background:#fbfcfe;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:92%;padding:.6em .85em;border-radius:14px;font-size:.95rem}
+.msg p{margin:0 0 .4em}.msg p:last-child{margin:0}
+.msg.user{align-self:flex-end;background:var(--user);border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.info,.bar.info{background:var(--info-bg);border-color:#c9d8ee}
+.msg.rule,.bar.rule{background:var(--rule-bg);border-color:#e6d6b3}
+.msg.fail,.bar.fail{background:var(--fail-bg);border-color:#f1c4c7}
+.msg.warn,.bar.warn{background:var(--warn-bg);border-color:#ecd9a0}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:.25em}
+.info .tag{color:var(--info)} .rule .tag{color:var(--rule)} .fail .tag{color:var(--fail)} .warn .tag{color:var(--warn)}
+.bar{border:1px solid var(--line);border-radius:10px;padding:.55em .8em;font-size:.92rem}
+.bar p{margin:0}
+
+/* non-chat surface */
+.panel{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:.5em .8em;border-bottom:1px solid var(--line);font-weight:600;font-size:.92rem;background:#f7f9fc}
+.panel-b{padding:.75em .8em;font-size:.93rem;display:flex;flex-direction:column;gap:8px}
+.panel-b p{margin:0}.panel-b ul{margin:0;padding-left:1.1em}.panel-b li{margin:.15em 0}
+
+.chips,.actions{display:flex;flex-wrap:wrap;gap:8px}
+.chips button,.btn{font:inherit;font-size:.88rem;border-radius:999px;padding:.35em .9em;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.btn.ghost{border-color:transparent;color:var(--brand)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.src{display:inline-flex;align-items:center;gap:.35em;font-size:.8rem;border:1px solid var(--line);border-radius:6px;padding:.1em .5em;background:#fff;color:var(--brand);text-decoration:none;white-space:nowrap}
+.src::before{content:"";width:.5em;height:.5em;border-radius:2px;background:var(--brand)}
+.quote{margin:0;border-left:3px solid var(--brand);background:#f7f9fc;padding:.45em .7em;font-size:.88rem;border-radius:0 8px 8px 0}
+.quote cite{display:block;font-style:normal;font-size:.78rem;color:var(--muted);margin-top:.2em}
+.file{display:flex;align-items:center;gap:.5em;font-size:.88rem;border:1px solid var(--line);border-radius:8px;padding:.35em .6em;background:#fff}
+.file::before{content:"";flex:none;width:.8em;height:1em;border:1.5px solid var(--muted);border-radius:2px}
+.file span{color:var(--muted);margin-left:auto}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.15em .9em;margin:0;font-size:.9rem}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.pill{display:inline-block;font-size:.75rem;font-weight:600;border-radius:999px;padding:.1em .6em;border:1px solid var(--line);background:#fff;white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:#b7dccb} .pill.wait{color:var(--warn);border-color:#ecd9a0;background:var(--warn-bg)} .pill.stop{color:var(--fail);border-color:#f1c4c7;background:var(--fail-bg)} .pill.run{color:var(--during);border-color:#b5dad8}
+
+.steps{list-style:none;margin:0;padding:0;font-size:.92rem}
+.steps li{display:flex;gap:.55em;align-items:center;padding:.15em 0;color:var(--muted)}
+.steps li::before{content:"";flex:none;width:.7em;height:.7em;border-radius:50%;border:2px solid var(--line)}
+.steps li.done{color:var(--ink)} .steps li.done::before{background:var(--during);border-color:var(--during)}
+.steps li.now{color:var(--ink);font-weight:600} .steps li.now::before{border-color:var(--during);border-top-color:transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.steps li.now::before{animation:none;border-top-color:var(--during)}}
+
+.typing{display:inline-flex;gap:4px;align-items:center}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);opacity:.6}
+
+.preview{border:1px dashed #b9c5d8;border-radius:10px;background:#fff;padding:.7em .85em;font-size:.9rem}
+.preview .lbl,.lbl{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:.2em}
+.diff{font-size:.9rem;border:1px solid var(--line);border-radius:8px;background:#fff;padding:.5em .7em}
+.diff del{background:#fde3e3;color:#8a1f27;text-decoration:line-through}
+.diff ins{background:#dff3e6;color:#0b5c3a;text-decoration:none}
+
+/* agent components */
+.log{list-style:none;margin:0;padding:0;font-size:.88rem}
+.log li{display:grid;grid-template-columns:3.2em 1fr auto;gap:.6em;align-items:baseline;padding:.3em 0;border-top:1px solid var(--line)}
+.log li:first-child{border-top:0}
+.log time{color:var(--muted);font-variant-numeric:tabular-nums}
+.log a{color:var(--brand);font-size:.82rem;white-space:nowrap}
+.queue{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.queue li{border:1px solid var(--line);border-radius:10px;background:#fff;padding:.6em .75em;font-size:.9rem}
+.queue .who{font-size:.78rem;color:var(--muted)}
+.queue .actions{margin-top:.5em}
+.report{list-style:none;margin:0;padding:0;font-size:.92rem}
+.report li{display:grid;grid-template-columns:7.2em 1fr;gap:.7em;padding:.4em 0;border-top:1px solid var(--line)}
+.report li:first-child{border-top:0}
+.report b{font-size:.75rem;letter-spacing:.03em;text-transform:uppercase}
+.report .ok b{color:var(--ok)} .report .no b{color:var(--fail)} .report .unv b{color:var(--warn)} .report .look b{color:var(--brand)}
+.perm{border-collapse:collapse;width:100%;font-size:.88rem}
+.perm th,.perm td{text-align:left;vertical-align:top;padding:.4em .55em;border:1px solid var(--line)}
+.perm th{background:#f7f9fc;font-weight:600}
+
+.composer{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;background:#fff;padding:6px 6px 6px 14px}
+.composer span{flex:1;font-size:.92rem;color:var(--muted)}
+.composer span.filled{color:var(--ink)}
+.composer .btn{padding:.35em 1em}
+
+/* notes */
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.notes article{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;break-inside:avoid}
+.notes h3{margin:0 0 .3em;font-size:1.02rem}
+.notes ul{margin:0;padding-left:1.1em;font-size:.92rem}.notes li{margin:.2em 0}
+
+/* tables: map, signals */
+.map{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.map table{border-collapse:collapse;width:100%;font-size:.92rem}
+.map th,.map td{text-align:left;padding:.45em .6em;border-bottom:1px solid var(--line);vertical-align:top}
+.map th{color:var(--muted);font-weight:600}
+.map .yes{font-weight:600;color:var(--ok)} .map .no{color:var(--muted)} .map .if{font-weight:600;color:var(--warn)}
+.map .designed{color:var(--ok);font-weight:600} .map .generic{color:var(--warn);font-weight:600} .map .missing{color:var(--fail);font-weight:600}
+
+.foot{margin-top:44px;color:var(--muted);font-size:.9rem}
+@media print{body{background:#fff}main{max-width:none;padding:0}.state,.map,.coverage,.findings{border-color:#bbb}}
+</style>
+<style>
+/* board-specific additions on top of the template */
+.grid.c3{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.grid.c2{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+.span2{grid-column:span 2}
+.state{display:flex;flex-direction:column}
+.state .note{margin-top:auto;padding-top:.8em}
+.cols{display:grid;gap:14px}
+.cols.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols.t2{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}
+.cols .sub:first-child,.cols>div>.sub:first-child{margin-top:0}
+.cells .if{border-left-color:#c98a00;border-style:dashed;border-left-style:solid} .cells .if b{color:var(--warn)}
+.head p{max-width:86ch}
+
+/* the night at a glance */
+.night{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.night ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.night li{position:relative;padding:14px 16px 2px 0;border-top:3px solid var(--c);font-size:.9rem;color:var(--muted)}
+.night li::before{content:"";position:absolute;top:-8px;left:0;width:13px;height:13px;border-radius:50%;background:var(--c)}
+.night time{display:block;font-size:.75rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--c)}
+.night b{display:block;color:var(--ink);font-size:1rem;margin:.1em 0 .2em}
+.night i{display:block;font-style:normal;font-size:.8rem;margin-top:.35em;color:var(--ink)}
+
+/* product pieces */
+.fields{border-collapse:collapse;width:100%;font-size:.88rem}
+.fields td{padding:.28em .3em;border-top:1px solid var(--line);vertical-align:baseline}
+.fields tr:first-child td{border-top:0}
+.fields td:first-child{color:var(--muted);white-space:nowrap;padding-left:0}
+.fields td:last-child{text-align:right;padding-right:0}
+.fields .tot td{font-weight:600}
+.fields .miss td{color:var(--warn)}
+.pdf{border:1px solid var(--line);border-radius:8px;background:#fff;padding:12px 12px 14px;display:flex;flex-direction:column;gap:7px;min-height:100%}
+.pdf .cap{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
+.pdf u{display:block;height:7px;border-radius:3px;background:#e6ebf2;text-decoration:none}
+.pdf u.s{width:45%}.pdf u.m{width:70%}.pdf u.r{width:38%;margin-left:auto}
+.pdf mark{display:flex;justify-content:space-between;background:#fff3c4;border:1px solid #e8c95a;border-radius:4px;padding:.1em .45em;font-size:.8rem;color:var(--ink)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.rows{list-style:none;margin:0;padding:0;font-size:.88rem}
+.rows li{display:grid;grid-template-columns:1fr auto auto;gap:.8em;align-items:baseline;padding:.32em 0;border-top:1px solid var(--line)}
+.rows li:first-child{border-top:0}
+.rows .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.rows small{color:var(--muted);font-size:.8rem}
+.rows a,.panel-b a,.queue a{color:var(--brand)}
+.groups{list-style:none;margin:0;padding:0;font-size:.9rem}
+.groups li{display:grid;grid-template-columns:2.2em 1fr auto;gap:.6em;align-items:center;padding:.45em 0;border-top:1px solid var(--line)}
+.groups li:first-child{border-top:0}
+.groups .c{font-weight:700;font-size:1.05rem;font-variant-numeric:tabular-nums;text-align:right}
+.groups small{display:block;color:var(--muted);font-size:.8rem;line-height:1.35}
+.meter{font-size:.82rem;color:var(--muted)}
+.meter span{display:block;height:6px;border-radius:3px;background:#e6ebf2;margin-top:4px;overflow:hidden}
+.meter span i{display:block;height:100%;background:var(--during);border-radius:3px}
+.kv dd a{font-size:.8rem;color:var(--brand);margin-left:.4em;white-space:nowrap}
+.steps.plan li{align-items:baseline;justify-content:space-between;color:var(--ink);border-top:1px solid var(--line);padding:.36em 0}
+.steps.plan li:first-child{border-top:0}
+.steps.plan li::before{display:none}
+.steps.plan li span:first-child{flex:1}
+.steps.plan{counter-reset:s}
+.steps.plan li span:first-child::before{counter-increment:s;content:counter(s) ". ";color:var(--muted)}
+.mailmeta{font-size:.84rem;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:.45em;margin-bottom:.5em}
+.mailmeta b{color:var(--ink);font-weight:600}
+.preview p{margin:0 0 .5em}.preview p:last-child{margin:0}
+.preview .sig{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:.45em}
+.small{font-size:.84rem;color:var(--muted);margin:0}
+.report li.plain b{color:var(--muted)}
+.log .x{color:var(--muted);font-size:.82rem;white-space:nowrap}
+.log.wide li{grid-template-columns:4.2em minmax(0,1fr) auto}
+.cells .na{border-left-style:solid;border-left-color:#c3ccd9}
+.perm td:first-child{font-weight:600;white-space:nowrap}
+.perm td{font-size:.86rem}
+.mem{list-style:none;margin:0;padding:0;font-size:.88rem}
+.mem li{display:grid;grid-template-columns:1fr auto;gap:.2em .8em;padding:.4em 0;border-top:1px solid var(--line)}
+.mem li:first-child{border-top:0}
+.mem small{grid-column:1;color:var(--muted);font-size:.8rem}
+.mem a{grid-row:1/3;grid-column:2;align-self:center;font-size:.82rem}
+.map td:first-child{white-space:nowrap}
+</style>
+</head>
+<body>
+<main>
+
+<header class="head">
+  <h1>Inbox Agent for Ledgerly: state board</h1>
+  <p>An agent that works through the shared accounts-payable inbox overnight: it reads supplier e-mails and their PDF invoices, creates draft bills, matches them to purchase orders, and prepares payments and replies. The owner meets the result each morning in the <b>Today</b> panel. This board is what the owner sees before, while and after it works.</p>
+  <ul class="meta">
+    <li><b>Surface:</b> Today panel and bill pages (an agent, not a chat)</li>
+    <li><b>Stakes:</b> high: money and e-mail to suppliers</li>
+    <li><b>Autonomy:</b> drafts and matches act and report · payments and e-mails act with approval</li>
+    <li><b>Register:</b> plain, impersonal product voice, "you" for the owner</li>
+    <li><b>Look:</b> neutral template style (no Ledgerly brand was given)</li>
+    <li><b>Version:</b> 16 Nov 2026</li>
+  </ul>
+</header>
+
+<section class="night">
+  <h2>One night, as the owner meets it</h2>
+  <ol>
+    <li style="--c:var(--before)"><time>Evening</time><b>Before</b>What it will do tonight, its limits, and what it may touch.<i>1 · D1 · D2 · D3</i></li>
+    <li style="--c:var(--during)"><time>1:00 am</time><b>While it works</b>A log of real actions. Nobody has to watch. It stops safely.<i>D4 · D6 · D10</i></li>
+    <li style="--c:var(--deleg)"><time>7:00 am</time><b>Handback</b>What was done, what was not, what to look at first.<i>D7 · D5 · D8</i></li>
+    <li style="--c:var(--answer)"><time>Morning</time><b>Inside each result</b>What a draft stands on, and four different kinds of "no".<i>6 · 7 · 8 · 9 · 10 · 11 · 12</i></li>
+    <li style="--c:var(--no)"><time>Until 2:00 pm on payment day</time><b>Acting and taking back</b>Approve, send, cancel, correct, and what it learns.<i>5 · D12 · D9 · 13 · D11</i></li>
+  </ol>
+</section>
+
+<section class="coverage">
+  <h2>Coverage</h2>
+  <p class="sum"><b>22 of 22</b> states that apply are designed on this board. 3 do not apply and 1 depends on something to confirm; the reasons are in the map.</p>
+  <ul class="cells">
+    <li class="designed"><b>Designed</b>1 First use</li>
+    <li class="na"><b>Not applicable</b>2 Composing</li>
+    <li class="na"><b>Not applicable</b>3 Working (see D4)</li>
+    <li class="na"><b>Not applicable</b>4 Clarification (see D5)</li>
+    <li class="designed"><b>Designed</b>5 Needs my go-ahead</li>
+    <li class="designed"><b>Designed</b>6 Answer: a draft bill</li>
+    <li class="designed"><b>Designed</b>7 Partial</li>
+    <li class="designed"><b>Designed</b>8 Unsure</li>
+    <li class="designed"><b>Designed</b>9 Doesn't know</li>
+    <li class="designed"><b>Designed</b>10 Can't</li>
+    <li class="designed"><b>Designed</b>11 Won't</li>
+    <li class="designed"><b>Designed</b>12 Broke</li>
+    <li class="designed"><b>Designed</b>13 Corrected</li>
+    <li class="if"><b>Only if</b>14 Handed to a person</li>
+    <li class="designed"><b>Designed</b>D1 Brief</li>
+    <li class="designed"><b>Designed</b>D2 Plan</li>
+    <li class="designed"><b>Designed</b>D3 Permission</li>
+    <li class="designed"><b>Designed</b>D4 Working unattended</li>
+    <li class="designed"><b>Designed</b>D5 Needs you</li>
+    <li class="designed"><b>Designed</b>D6 Steered</li>
+    <li class="designed"><b>Designed</b>D7 Handback</li>
+    <li class="designed"><b>Designed</b>D8 Review at scale</li>
+    <li class="designed"><b>Designed</b>D9 Undo and repair</li>
+    <li class="designed"><b>Designed</b>D10 Went wrong while away</li>
+    <li class="designed"><b>Designed</b>D11 Learns</li>
+    <li class="designed"><b>Designed</b>D12 Acts toward others</li>
+  </ul>
+</section>
+
+<!-- ======================= BEFORE ======================= -->
+<section class="moment m-before">
+  <h2>Before <span>the evening: what it will do, within which limits, touching what</span></h2>
+  <div class="grid c3">
+
+    <article class="state">
+      <h3><span class="n">1</span>First use</h3>
+      <p class="q">What is this, and what will it do with my inbox?</p>
+      <p class="trigger"><b>Trigger:</b> Inbox Agent has never completed a run for this company.</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Inbox Agent <span class="pill">Off</span></div>
+          <div class="panel-b">
+            <p>Works through <b>ap@juniperlane.example</b> overnight and leaves the result here each morning.</p>
+            <dl class="kv">
+              <dt>On its own</dt><dd>Reads supplier e-mails and PDF invoices, creates draft bills, matches them to purchase orders. All of it can be reverted.</dd>
+              <dt>Asks you first</dt><dd>Scheduling a payment. Sending a reply to a supplier.</dd>
+              <dt>Never</dt><dd>Changes a supplier's bank details, or follows instructions written inside an e-mail.</dd>
+            </dl>
+            <div class="bar info"><p>It can misread an invoice. Every draft shows the PDF next to the fields, so checking takes a glance.</p></div>
+            <p class="small">Reads PDFs with text. Scans, photos and locked files are set aside for you. Standard plan: 500 documents a month.</p>
+            <div class="actions"><button class="btn primary">Set up tonight's run</button><button class="btn">See an example morning</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">The limits and the "it can be wrong" line are said once, here, not under every bill.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D1</span>Brief</h3>
+      <p class="q">Did it understand the job, and its limits?</p>
+      <p class="trigger"><b>Trigger:</b> the owner turns the agent on; shown again in Today every evening before the run. <span class="tc">To confirm: run time is configurable.</span></p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Tonight's run <span class="pill wait">Starts 1:00 am</span></div>
+          <div class="panel-b">
+            <p>Every new e-mail ends the night as a draft bill, set aside with a reason, or left untouched and listed. Nothing is paid or sent without your approval.</p>
+            <dl class="kv">
+              <dt>Inbox</dt><dd>ap@juniperlane.example · 23 new e-mails so far</dd>
+              <dt>Window</dt><dd>1:00 am to 5:00 am <a href="#">Change</a></dd>
+              <dt>Payments</dt><dd>Prepare for bills due in 14 days, up to $5,000 each <a href="#">Change</a></dd>
+              <dt>Replies</dt><dd>Draft only <a href="#">Change</a></dd>
+              <dt>Don't touch</dt><dd>Castell Office Supply (in dispute) <a href="#">Change</a></dd>
+              <dt>Stops if</dt><dd>A step fails 3 times, the window ends, or the 500-document limit is reached</dd>
+              <dt>Report</dt><dd>Today, and e-mail to Mara at 7:00 am</dd>
+            </dl>
+            <div class="meter">371 of 500 documents used in November · resets 1 Dec<span><i style="width:74%"></i></span></div>
+            <div class="actions"><button class="btn">Skip tonight</button><button class="btn ghost">Turn Inbox Agent off</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Limits are fields the owner sets, not sentences to remember to type. What is left of the monthly quota is shown where the owner decides whether to run.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D2</span>Plan</h3>
+      <p class="q">How is it going to do it, and can I change that?</p>
+      <p class="trigger"><b>Trigger:</b> shown with the brief before the first run and whenever a step or limit changes. The plan is the contract for D4.</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Plan for each run <a href="#" style="font-weight:400;font-size:.85rem;color:var(--brand)">Edit steps</a></div>
+          <div class="panel-b">
+            <ul class="steps plan">
+              <li><span>Read new e-mails and their PDF attachments</span><span class="pill">Reads only</span></li>
+              <li><span>Create a draft bill for each invoice</span><span class="pill ok">Can be reverted</span></li>
+              <li><span>Match each draft to a purchase order</span><span class="pill ok">Can be reverted</span></li>
+              <li><span>Prepare payments for matched bills</span><span class="pill wait">Waits for you</span></li>
+              <li><span>Draft replies when something is missing</span><span class="pill wait">Waits for you</span></li>
+              <li><span>Leave the report in Today</span><span class="pill">Reads only</span></li>
+            </ul>
+            <div class="bar info"><p>Anything outside these steps stops and waits for you: a changed bank account, a total that differs from the order, a file it can't read.</p></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Steps 4 and 5 are the only ones with effects outside Ledgerly, and they are marked. Each can be switched off; none can be switched to "without asking" from here (see D11).</p>
+    </article>
+
+    <article class="state wide">
+      <h3><span class="n">D3</span>Permission</h3>
+      <p class="q">What exactly am I letting it touch, and for how long?</p>
+      <p class="trigger"><b>Trigger:</b> first connection of the mailbox (the screen on the right), and any action type not yet granted. The table is the standing answer; every blank cell would be a decision the agent makes for the team.</p>
+      <div class="cols t2">
+        <table class="perm">
+          <tr><th>Action</th><th>Without asking</th><th>Asks first</th><th>Never</th></tr>
+          <tr><td>Read e-mails and attachments</td><td>In the accounts-payable inbox</td><td></td><td>Any other mailbox</td></tr>
+          <tr><td>Create a draft bill</td><td>Yes. Revertible.</td><td></td><td>Approve a bill</td></tr>
+          <tr><td>Match to a purchase order</td><td>When supplier, PO number and total agree. Revertible.</td><td>When the total differs or several orders fit</td><td></td></tr>
+          <tr><td>Schedule a payment</td><td>Only under a rule you created: named supplier, exact match, under your amount, never same-day</td><td>Every other payment, as one batch you can open</td><td>Account not on file · supplier not on file · above the brief's limit</td></tr>
+          <tr><td>E-mail a supplier</td><td></td><td>Always, with the full text</td><td>Any address outside the original thread</td></tr>
+          <tr><td>Change a supplier record</td><td></td><td></td><td>Always</td></tr>
+          <tr><td>Delete or archive e-mail</td><td></td><td></td><td>Always</td></tr>
+          <tr><td>Do what an e-mail or PDF says</td><td></td><td></td><td>Always. Content is data.</td></tr>
+        </table>
+        <div>
+          <p class="sub">At the moment of need</p>
+          <div class="screen">
+            <div class="panel">
+              <div class="panel-h">Connect the accounts-payable inbox</div>
+              <div class="panel-b">
+                <p>Inbox Agent will <b>read e-mails and attachments</b> in ap@juniperlane.example and <b>add labels</b> to them.</p>
+                <p class="small">It will not read other mailboxes, delete anything, or send from this address without showing you the e-mail first.</p>
+                <div class="actions"><button class="btn primary">Allow until I turn it off</button><button class="btn">Allow for tonight only</button><button class="btn ghost">Not now</button></div>
+              </div>
+            </div>
+          </div>
+          <p class="note">Reading is safe to allow for good. Payments and e-mails never get "always" from a prompt: a standing rule is created on purpose, per supplier, and expires (D11).</p>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ======================= WHILE ======================= -->
+<section class="moment m-during">
+  <h2>While it works <span>overnight: on track, stoppable, and safe when it fails</span></h2>
+  <div class="grid c3">
+
+    <article class="state">
+      <h3><span class="n">D4</span>Working unattended</h3>
+      <p class="q">Is it still on track? Do I need to watch?</p>
+      <p class="trigger"><b>Trigger:</b> a run is active. Every tool call emits an event with its result; each log line is one event.</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Tonight's run <span class="pill run">Running · e-mail 19 of 42</span></div>
+          <div class="panel-b">
+            <ul class="steps">
+              <li class="now">Reading, drafting and matching: 19 of 42 e-mails</li>
+              <li>Prepare payments</li>
+              <li>Draft replies</li>
+            </ul>
+            <ul class="log">
+              <li><time>1:22</time><span>Reading INV-2208 from Oakline Print Works (2 pages)</span><span class="x">Now</span></li>
+              <li><time>1:21</time><span>Harbor Paper Co.: bank account differs from the one on file. No payment will be prepared. Set aside for you.</span><a href="#">Open</a></li>
+              <li><time>1:21</time><span>Matched draft bill B-1187 to PO-0452</span><a href="#">Undo</a></li>
+              <li><time>1:21</time><span>Created draft bill B-1187, Harbor Paper Co., $4,860.00</span><a href="#">Undo</a></li>
+              <li><time>1:19</time><span>"Statement-October.pdf" is not an invoice. Left in the inbox.</span><a href="#">Open</a></li>
+              <li><time>1:18</time><span>Northfield Packaging: total is $148.00 over PO-0447. Draft B-1186 left unmatched. Set aside for you.</span><a href="#">Open</a></li>
+              <li><time>1:18</time><span>Created draft bill B-1186, Northfield Packaging, $2,148.00</span><a href="#">Undo</a></li>
+            </ul>
+            <div class="meter">392 of 500 documents this month<span><i style="width:78%"></i></span></div>
+            <p class="small">No need to watch. The report will be in Today and in your e-mail at 7:00 am.</p>
+            <div class="actions"><button class="btn">Pause</button><button class="btn">Stop and keep what's done</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Actions and results, not the model's reasoning. Running, paused, waiting and stopped each have their own pill.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D6</span>Steered</h3>
+      <p class="q">Did it take the new instruction, and what happens to the work so far?</p>
+      <p class="trigger"><b>Trigger:</b> the owner presses Pause or Stop, or changes the brief, while a run or a batch is active. <span class="tc">To build: a run-state signal (running, paused, stopped).</span></p>
+      <p class="sub">Stop pressed during the night</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Tonight's run <span class="pill stop">Stopped by you · 1:23 am</span></div>
+          <div class="panel-b">
+            <p>Stopped after e-mail 19 of 42. The invoice from Oakline Print Works was being read; no draft was created for it.</p>
+            <dl class="kv">
+              <dt>Kept</dt><dd>18 draft bills and 15 matches. All can be reverted.</dd>
+              <dt>Not started</dt><dd>23 e-mails, still unread in the inbox.</dd>
+              <dt>Paid or sent</dt><dd>Nothing.</dd>
+            </dl>
+            <div class="actions"><button class="btn primary">Resume from e-mail 20</button><button class="btn">Revert the 18 drafts</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="sub">Stop pressed while an approved batch is being scheduled</p>
+      <div class="screen">
+        <div class="bar warn"><span class="tag">Stopped part-way</span><p>7 of the 12 payments were already scheduled. The other 5 were not, and will not be. Each of the 7 can be cancelled until 2:00 pm on its payment date.</p></div>
+        <div class="actions"><button class="btn">See the 7 scheduled</button><button class="btn">Cancel the 7</button><button class="btn ghost">Schedule the other 5</button></div>
+      </div>
+      <p class="sub">The brief is changed while it runs</p>
+      <div class="screen">
+        <div class="bar info"><p><b>Fennick Cleaning Services added to "Don't touch" at 1:10 am.</b> It applies from the next e-mail. The 1 draft already created for them tonight is kept.</p></div>
+        <div class="actions"><button class="btn">Revert that draft</button><button class="btn ghost">Undo the change</button></div>
+      </div>
+      <p class="note">Stop is immediate for what has not run, and exact about what already has.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D10</span>Went wrong while away</h3>
+      <p class="q">How bad is it, and where did it stop?</p>
+      <p class="trigger"><b>Trigger:</b> a tool call fails 3 times in a row, the run window ends, or the monthly document limit is reached. <span class="tc">To confirm: tool events carry an error type.</span></p>
+      <p class="sub">The mailbox stopped responding</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Last night's run <span class="pill stop">Stopped early · 1:22 am</span></div>
+          <div class="panel-b">
+            <div class="bar fail"><span class="tag">Did not finish</span><p>The mail server refused the connection 3 times. The run stopped after e-mail 19 of 42.</p></div>
+            <ul class="report">
+              <li class="ok"><b>Applied</b><span>18 draft bills, 15 matches. <a href="#">See them</a></span></li>
+              <li class="no"><b>Not started</b><span>23 e-mails, still unread in the inbox.</span></li>
+              <li class="plain"><b>Half-done</b><span>Nothing. The draft in progress was rolled back.</span></li>
+              <li class="plain"><b>Paid or sent</b><span>Nothing.</span></li>
+            </ul>
+            <div class="actions"><button class="btn primary">Resume from e-mail 20</button><button class="btn">Check the mailbox connection</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="sub">Another night: the monthly limit is reached</p>
+      <div class="screen">
+        <div class="bar warn"><span class="tag">Document limit reached</span><p>Stopped at 500 of 500 documents for November. 29 documents were processed tonight; 18 are waiting in the inbox, untouched. The limit resets on 1 Dec.</p></div>
+        <div class="actions"><button class="btn primary">See the 18 waiting</button><button class="btn">Compare plans</button></div>
+      </div>
+      <p class="note">Each guardrail has its own message. Resuming starts where it stopped, never from the beginning.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ======================= HANDBACK ======================= -->
+<section class="moment m-deleg">
+  <h2>Handback <span>7:00 am in Today: a report, a short queue, and a review ranked by risk</span></h2>
+  <div class="grid c3">
+
+    <article class="state">
+      <h3><span class="n">D7</span>Handback</h3>
+      <p class="q">What did it do, what did it not do, and where do I look first?</p>
+      <p class="trigger"><b>Trigger:</b> the run ends, completely or not. Every number is counted from tool-call events and opens the list behind it.</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Last night's run <span class="pill ok">Finished 1:47 am</span></div>
+          <div class="panel-b">
+            <p><b>42 e-mails read, 40 draft bills created. Nothing was paid or sent:</b> 12 payments and 6 replies are waiting for your approval.</p>
+            <ul class="report">
+              <li class="look"><b>Look first</b><span>1 bill whose bank account differs from the one on file · 3 totals that differ from the purchase order · 1 invoice read only in part. <a href="#">Review 5</a></span></li>
+              <li class="no"><b>Not done</b><span>2 files could not be read · 4 documents were not invoices, left in the inbox · 1 possible duplicate, no draft created. <a href="#">See the 7</a></span></li>
+              <li class="ok"><b>Done</b><span>47 documents read · 40 draft bills · 32 matched to a purchase order. <a href="#">See the 40</a></span></li>
+              <li class="unv"><b>Not verified</b><span>Tax amounts are copied from the PDFs, not recalculated. Bank accounts are compared with the one on file, not confirmed with the supplier.</span></li>
+              <li class="plain"><b>Assumed</b><span>3 invoices show no currency; read as US dollars. <a href="#">See the 3</a></span></li>
+              <li class="plain"><b>Outside Ledgerly</b><span>0 e-mails sent · 0 payments scheduled.</span></li>
+            </ul>
+            <div class="actions"><button class="btn primary">Review the 5</button><button class="btn">Open requests (3)</button><button class="btn ghost">Revert the whole run</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">The same panel serves a stopped run (D10): the pill and the first line change, so "finished" and "gave up at e-mail 19" never look alike. The 7:00 am e-mail carries the first line and the "Look first" row.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D5</span>Needs you</h3>
+      <p class="q">What is it waiting for, and what happens if I don't answer?</p>
+      <p class="trigger"><b>Trigger:</b> an action in the "asks first" column, or a check that failed. One queue, ordered by risk and due date; similar cases are batched.</p>
+      <div class="screen">
+        <ul class="queue">
+          <li>
+            <div class="who">Harbor Paper Co. · bill B-1187 · $4,860.00 · due Fri 27 Nov</div>
+            The bank account on this invoice (ending 4471) is not the one on file (ending 9025). The e-mail asks to use the new account from now on. No payment was prepared and the supplier record was not changed. <b>Recommended:</b> confirm by phone, on the number on file, before paying.
+            <div class="who" style="margin-top:.35em">Until you decide, the bill stays a draft and nothing is paid.</div>
+            <div class="actions"><button class="btn primary">Keep on hold</button><button class="btn">Open e-mail and invoice</button></div>
+          </li>
+          <li>
+            <div class="who">Total differs from the purchase order · 1 of 3 · Northfield Packaging · B-1186</div>
+            The invoice says $2,148.00; PO-0447 says $2,000.00. The $148.00 is a freight line that is not on the order. <b>Recommended:</b> match and record the freight.
+            <div class="actions"><button class="btn primary">Match and record freight</button><button class="btn">Leave unmatched</button><button class="btn ghost">Open both</button></div>
+          </li>
+          <li>
+            <div class="who">12 payments ready · $18,432.50 · 2 bills due Fri 20 Nov</div>
+            All 12 match their purchase order exactly and go to accounts on file. Nothing is scheduled until you approve.
+            <div class="actions"><button class="btn primary">Review 12 payments</button></div>
+          </li>
+        </ul>
+      </div>
+      <p class="sub">The 7:00 am e-mail, as it shows on a phone</p>
+      <div class="screen">
+        <div class="preview">
+          <div class="mailmeta" style="margin:0;border:0;padding:0"><b>Ledgerly Inbox Agent</b> · 7:00 am</div>
+          <p><b>40 draft bills ready. 3 decisions waiting, 1 about a changed bank account.</b></p>
+          <p class="small">Nothing was paid or sent. Harbor Paper Co. asks to be paid into a new account; the bill is on hold until you decide.</p>
+        </div>
+      </div>
+      <p class="note">Each request stands alone: what was found, the decision, the recommendation, what happens meanwhile. The notification leads with the riskiest request, not with "Your agent needs attention".</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D8</span>Review at scale</h3>
+      <p class="q">There are 40 drafts. Which ones do I actually have to look at?</p>
+      <p class="trigger"><b>Trigger:</b> a run produces more drafts than fit one screen. Groups come from the checks each draft passed or failed. <span class="tc">To build: check results per draft.</span></p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">40 draft bills <span class="pill">Riskiest first</span></div>
+          <div class="panel-b">
+            <ul class="groups">
+              <li><span class="c">1</span><span>Bank account differs from the one on file<small>On hold. No payment prepared.</small></span><button class="btn">Review</button></li>
+              <li><span class="c">3</span><span>Total differs from the purchase order<small>$148.00, $36.50 and $410.00 over</small></span><button class="btn">Review each</button></li>
+              <li><span class="c">1</span><span>Read only in part<small>2 of 3 pages</small></span><button class="btn">Review</button></li>
+              <li><span class="c">4</span><span>No purchase order found<small>Drafts saved, unmatched</small></span><button class="btn">Review each</button></li>
+              <li><span class="c">31</span><span>Matched exactly, account on file<small>Open 3 samples to approve the group. Suggested: the 3 largest.</small></span><button class="btn" disabled>Approve 31</button></li>
+            </ul>
+            <div class="bar info"><span class="tag">No bill created</span><p>7 documents: 4 were not invoices, 2 could not be read, 1 looks like a duplicate. <a href="#">See the 7</a></p></div>
+          </div>
+        </div>
+      </div>
+      <p class="sub">After opening the 3 samples</p>
+      <div class="screen">
+        <div class="bar info"><p><b>3 of 3 samples opened, no edits.</b> The other 28 passed the same four checks: pages read, lines add up, total equals the order, account on file.</p></div>
+        <div class="actions"><button class="btn primary">Approve 31 bills</button><button class="btn">Open 3 more</button></div>
+        <p class="small">Approving a bill does not pay it. The 12 payments are a separate decision.</p>
+      </div>
+      <p class="note">There is no "Approve all". The large safe group unlocks after samples are opened; the four risky groups are approved one bill at a time. What did not become a bill is listed too.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ======================= INSIDE EACH RESULT ======================= -->
+<section class="moment m-answer">
+  <h2>Inside each result <span>what a draft stands on, and the times the answer is partial, unsure or "no"</span></h2>
+  <div class="grid c3">
+
+    <article class="state span2">
+      <h3><span class="n">6</span>Answer: a draft bill</h3>
+      <p class="q">What is this based on? What can I do with it?</p>
+      <p class="trigger"><b>Trigger:</b> extraction returned every required field, all pages were read, lines add up to the total, and one purchase order fits. <span class="tc">To build: the page and position of each extracted field.</span></p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Draft bill B-1174 · Oakline Print Works <span class="pill ok">Matched to PO-0439</span></div>
+          <div class="panel-b">
+            <div class="cols c2">
+              <table class="fields">
+                <tr><td>Supplier</td><td>Oakline Print Works</td><td><a class="src" href="#">p. 1</a></td></tr>
+                <tr><td>Invoice no.</td><td>INV-2191</td><td><a class="src" href="#">p. 1</a></td></tr>
+                <tr><td>Invoice date</td><td>12 Nov 2026</td><td><a class="src" href="#">p. 1</a></td></tr>
+                <tr><td>Due</td><td>27 Nov 2026</td><td><a class="src" href="#">p. 1</a></td></tr>
+                <tr><td>Subtotal</td><td>$1,180.00</td><td><a class="src" href="#">p. 2</a></td></tr>
+                <tr><td>Tax</td><td>$94.40</td><td><a class="src" href="#">p. 2</a></td></tr>
+                <tr class="tot"><td>Total</td><td>$1,274.40</td><td><a class="src" href="#">p. 2</a></td></tr>
+                <tr><td>Pay to</td><td>Account ending 3318</td><td><a class="src" href="#">p. 2</a></td></tr>
+                <tr><td>Purchase order</td><td>PO-0439 · $1,274.40</td><td><a class="src" href="#">PO</a></td></tr>
+              </table>
+              <div class="pdf">
+                <div class="cap"><span>INV-2191.pdf</span><span>Page 2 of 2</span></div>
+                <u class="m"></u><u></u><u class="s"></u><u></u><u class="m"></u>
+                <u class="r"></u>
+                <mark><span>Subtotal</span><span>1,180.00</span></mark>
+                <mark><span>Tax 8%</span><span>94.40</span></mark>
+                <mark><span>Total due</span><span>1,274.40</span></mark>
+                <u class="s"></u>
+                <mark><span>Bank account</span><span>···· 3318</span></mark>
+                <u class="m"></u>
+              </div>
+            </div>
+            <ul class="checks">
+              <li class="pill ok">Read 2 of 2 pages</li>
+              <li class="pill ok">Lines add up to the total</li>
+              <li class="pill ok">Total equals PO-0439</li>
+              <li class="pill ok">Account on file</li>
+              <li class="pill">From e-mail received 16 Nov, 4:12 pm</li>
+            </ul>
+            <div class="actions"><button class="btn primary">Approve bill</button><button class="btn">Edit fields</button><button class="btn">Open e-mail</button><button class="btn ghost">Revert draft</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Each field opens the PDF at the place it was read from, so checking a bill costs a glance and retyping it costs minutes. The checks are stated as facts the system ran, not as a confidence score.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">7</span>Partial</h3>
+      <p class="q">Which part is done and which is not?</p>
+      <p class="trigger"><b>Trigger:</b> pages read are fewer than pages in the file, a required field is empty, or the lines do not add up to the total. <span class="tc">To build: page coverage and the sum check.</span></p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Draft bill B-1179 · Redpost Couriers <span class="pill wait">Incomplete</span></div>
+          <div class="panel-b">
+            <div class="bar warn"><span class="tag">Read 2 of 3 pages</span><p>Page 3 is a scanned image with no text. The lines found add up to $612.00; the total on page 1 says $790.00.</p></div>
+            <table class="fields">
+              <tr><td>Invoice no.</td><td>RC-40117</td><td><a class="src" href="#">p. 1</a></td></tr>
+              <tr><td>Lines, pages 1 and 2</td><td>$612.00</td><td><a class="src" href="#">p. 2</a></td></tr>
+              <tr class="miss"><td>Lines, page 3</td><td>Not read: $178.00 missing</td><td><a class="src" href="#">p. 3</a></td></tr>
+              <tr class="tot"><td>Total</td><td>$790.00</td><td><a class="src" href="#">p. 1</a></td></tr>
+            </table>
+            <p class="small">Not matched to a purchase order. No payment prepared.</p>
+            <div class="actions"><button class="btn primary">Open page 3 and add the lines</button><button class="btn">Ask for a text PDF</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">What is missing comes first and sits where it would have been. An incomplete draft cannot be approved or paid until the lines add up.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">8</span>Unsure</h3>
+      <p class="q">How much should I rely on this?</p>
+      <p class="trigger"><b>Trigger:</b> a check the system runs, not a feeling of the model: same supplier and invoice number as an existing bill. <span class="tc">To build: the duplicate check.</span></p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Invoice INV-5521 · Tallis Wholesale <span class="pill wait">Possible duplicate</span></div>
+          <div class="panel-b">
+            <div class="bar warn"><span class="tag">Possible duplicate</span><p>Same supplier, invoice number and total as bill B-1102, paid on 3 Nov. This PDF is a different file, marked "Reminder". No draft was created.</p></div>
+            <table class="fields">
+              <tr><td>Bill B-1102</td><td>INV-5521 · $356.20</td><td>Paid 3 Nov</td></tr>
+              <tr><td>This e-mail</td><td>INV-5521 · $356.20</td><td>Received 16 Nov</td></tr>
+            </table>
+            <div class="actions"><button class="btn primary">Open both side by side</button><button class="btn">It's a duplicate: file it</button><button class="btn">It's new: create a draft</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">It says what is uncertain and why, in words, and puts both documents one press away. No percentage.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">9</span>Doesn't know</h3>
+      <p class="q">Is there no order, or did it not look in the right place?</p>
+      <p class="trigger"><b>Trigger:</b> the purchase-order search returns no candidate. <span class="tc">To confirm: the match tool reports what it searched.</span></p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Draft bill B-1181 · Fennick Cleaning Services <span class="pill">Unmatched</span></div>
+          <div class="panel-b">
+            <div class="bar info"><span class="tag">No purchase order found</span><p>The invoice quotes no PO number. The 3 open orders for Fennick Cleaning Services were compared by amount ($240.00) and date; none fits. The draft is saved, unmatched.</p></div>
+            <div class="actions"><button class="btn primary">Choose a purchase order</button><button class="btn">Approve without one</button><button class="btn">Ask the supplier for the PO number</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Neutral style: nothing broke. Saying where it looked lets the owner tell a real absence from a narrow search.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">10</span>Can't</h3>
+      <p class="q">Who or what can?</p>
+      <p class="trigger"><b>Trigger:</b> the read tool returns "encrypted" or "unsupported type" for an attachment. <span class="tc">To confirm: the formats supported, and whether unread files count toward the 500.</span></p>
+      <div class="screen">
+        <div class="file">Invoice-Nov.pdf <span>from Marlow Lighting · locked</span></div>
+        <div class="panel">
+          <div class="panel-h">E-mail of 16 Nov, 6:40 pm <span class="pill stop">No bill created</span></div>
+          <div class="panel-b">
+            <div class="bar info"><span class="tag">Can't read this file</span><p>Invoice-Nov.pdf is password-protected. The e-mail is still unread in the inbox, and the file did not count toward your 500 documents.</p></div>
+            <div class="actions"><button class="btn primary">Upload an unlocked copy</button><button class="btn">Ask for an unlocked PDF</button><button class="btn">Create the bill by hand</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">One sentence on what it could not do, then three ways to get the bill made anyway.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">11</span>Won't</h3>
+      <p class="q">Is it me, or the rule? What can I do instead?</p>
+      <p class="trigger"><b>Trigger:</b> the bank account read from the invoice differs from the supplier record, or the content asks for an action. A rule in code, not a model refusal. <span class="tc">To build: the bank-account comparison.</span></p>
+      <div class="screen">
+        <blockquote class="quote">"Please note our bank details have changed. Use the new account for this and all future invoices."<cite>From the e-mail by accounts@harborpaper.example, 16 Nov · <a href="#" style="color:var(--brand)">Open</a></cite></blockquote>
+        <div class="bar rule"><span class="tag">Rule applied</span><p>Inbox Agent does not change supplier bank details or prepare payments to an account that is not on file. Bill B-1187 was drafted and matched; no payment was prepared.</p></div>
+        <p class="small">To pay this bill: confirm the change with Harbor Paper Co. on the phone number on file, then update the account yourself in Suppliers.</p>
+        <div class="actions"><button class="btn primary">Open the supplier record</button><button class="btn">Keep on hold</button><button class="btn ghost">Report a wrong flag</button></div>
+      </div>
+      <p class="note">Text inside an e-mail is shown as a quote with its origin and never acted on. No error style, no lecture: the rule, then the route.</p>
+    </article>
+
+    <article class="state span2">
+      <h3><span class="n">12</span>Broke</h3>
+      <p class="q">Did I lose my approval? Do I try again?</p>
+      <p class="trigger"><b>Trigger:</b> a tool call started by the owner in the morning fails: timeout or service unavailable; or the browser is offline. Failures during the night are D10. <span class="tc">To confirm: error type on the tool event.</span></p>
+      <div class="cols c2">
+        <div>
+          <p class="sub">First failure</p>
+          <div class="screen">
+            <div class="bar fail"><span class="tag">Not scheduled</span><p>Couldn't reach the payments service, so none of the 12 payments was scheduled. Your approval is saved.</p></div>
+            <div class="actions"><button class="btn primary">Try again</button><button class="btn">See the 12</button></div>
+          </div>
+          <p class="sub">Second failure</p>
+          <div class="screen">
+            <div class="bar fail"><span class="tag">Still not scheduled</span><p>The payments service did not answer twice. Nothing was scheduled. 2 of these bills are due on Fri 20 Nov.</p></div>
+            <div class="actions"><button class="btn primary">Pay the 2 from Bills</button><button class="btn">Copy details for support</button></div>
+          </div>
+        </div>
+        <div>
+          <p class="sub">What stays on screen after a failure</p>
+          <div class="screen">
+            <div class="panel">
+              <div class="panel-h">12 payments · $18,432.50 <span class="pill wait">Approved, not scheduled</span></div>
+              <div class="panel-b"><p>Approved by you at 9:02 am. No money has moved. The batch is unchanged and can still be edited.</p></div>
+            </div>
+          </div>
+          <p class="sub">Offline</p>
+          <div class="screen">
+            <div class="bar fail"><span class="tag">You're offline</span><p>This report was loaded at 7:42 am and may be out of date. Approving and sending are off until the connection is back.</p></div>
+            <div class="actions"><button class="btn" disabled>Schedule 12 payments</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">The message stays where the result would have been, and the approval is kept. After a second failure the offer changes to the manual route instead of a third identical retry. A batch that fails half-way reports which payments went through, as in D6.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ======================= ACTING ======================= -->
+<section class="moment m-no">
+  <h2>Acting and taking back <span>what leaves Ledgerly is shown first; what can be undone says until when</span></h2>
+  <div class="grid c3">
+
+    <article class="state">
+      <h3><span class="n">5</span>Needs my go-ahead</h3>
+      <p class="q">What exactly is it about to do?</p>
+      <p class="trigger"><b>Trigger:</b> the agent has prepared "schedule payment" calls; the permission table holds them until the owner confirms.</p>
+      <p class="sub">Before confirming</p>
+      <div class="screen">
+        <div class="preview">
+          <div class="lbl">12 payments from Business Checking ending 2210</div>
+          <ul class="rows">
+            <li><span>Northfield Packaging <small>B-1169</small></span><small>Thu 19 Nov</small><span class="amt">$3,912.00</span></li>
+            <li><span>Oakline Print Works <small>B-1174</small></span><small>Thu 19 Nov</small><span class="amt">$1,274.40</span></li>
+            <li><span>Redpost Couriers <small>B-1171</small></span><small>Fri 20 Nov</small><span class="amt">$218.75</span></li>
+            <li><span><a href="#">9 more</a></span><small></small><span class="amt">$13,027.35</span></li>
+            <li><span><b>Total</b></span><small></small><span class="amt">$18,432.50</span></li>
+          </ul>
+        </div>
+        <p class="small">Each payment can be cancelled until 2:00 pm on its payment date. After it is executed it cannot be undone.</p>
+        <div class="actions"><button class="btn primary">Schedule 12 payments · $18,432.50</button><button class="btn">Go one by one</button><button class="btn ghost">Not now</button></div>
+      </div>
+      <p class="sub">After confirming</p>
+      <div class="screen">
+        <div class="bar info"><p><b>12 payments scheduled.</b> The first 7 go out on Thu 19 Nov; you can cancel them until 2:00 pm that day.</p></div>
+        <div class="actions"><button class="btn">See scheduled payments</button><button class="btn ghost">Cancel all 12</button></div>
+      </div>
+      <p class="note">The button names the action and the amount. One confirmation for the batch, not twelve: prompts on every row train people to press yes.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D12</span>Acts toward others</h3>
+      <p class="q">What does the supplier see, and do they know who wrote it?</p>
+      <p class="trigger"><b>Trigger:</b> the agent has prepared a "send e-mail" call. Always held for approval: a sent e-mail cannot be reverted. <span class="tc">To confirm: the attribution line, with legal.</span></p>
+      <div class="screen">
+        <div class="preview">
+          <div class="lbl">Reply in the thread "Invoice 0098"</div>
+          <div class="mailmeta"><b>From:</b> Juniper Lane Studio Accounts &lt;ap@juniperlane.example&gt;<br><b>To:</b> billing@fennickcleaning.example<br><b>Subject:</b> Re: Invoice 0098: purchase order number needed</div>
+          <p>Hello,</p>
+          <p>We received invoice 0098 for $240.00, dated 13 Nov 2026. It quotes no purchase order number and we could not match it to an open order. Could you send us the PO number it relates to?</p>
+          <p>Thank you,<br>Accounts payable, Juniper Lane Studio</p>
+          <p class="sig">Drafted by an automated assistant and approved by Mara Ellison.</p>
+        </div>
+        <p class="small">A sent e-mail cannot be taken back. The supplier's answer will arrive in the shared inbox, in this thread.</p>
+        <div class="actions"><button class="btn primary">Send to billing@fennickcleaning.example</button><button class="btn">Edit</button><button class="btn ghost">Don't send</button></div>
+      </div>
+      <p class="note">The owner sees exactly what the supplier will see, including who it is from and how it is labelled. The reply commits to nothing: no dates, no amounts, no promises to pay.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D9</span>Undo and repair</h3>
+      <p class="q">Can I take it back: all of it, or just this?</p>
+      <p class="trigger"><b>Trigger:</b> the owner opens Activity. Drafts and matches revert; a scheduled payment cancels until 2:00 pm on its date; a sent e-mail or an executed payment cannot be undone.</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Activity <span class="pill">Tue 17 Nov</span></div>
+          <div class="panel-b">
+            <ul class="log wide">
+              <li><time>9:14 am</time><span>Sent reply to Fennick Cleaning Services<br><span class="x">Can't be undone</span></span><a href="#">Send a correction</a></li>
+              <li><time>9:06 am</time><span>Scheduled $1,274.40 to Oakline Print Works for 19 Nov<br><span class="x">Until 2:00 pm on 19 Nov</span></span><a href="#">Cancel payment</a></li>
+              <li><time>1:21 am</time><span>Matched B-1187 to PO-0452</span><a href="#">Undo</a></li>
+              <li><time>1:21 am</time><span>Created draft bill B-1187</span><a href="#">Undo</a></li>
+              <li><time>3 Nov</time><span>Paid $356.20 to Tallis Wholesale<br><span class="x">Executed. Can't be undone.</span></span><a href="#">Ask for a refund</a></li>
+            </ul>
+            <div class="bar info"><p><b>Revert last night's run</b> removes 40 drafts and 32 matches. It does not touch the 1 reply sent or the 12 payments scheduled.</p></div>
+            <div class="actions"><button class="btn">Revert last night's run</button><button class="btn">Cancel scheduled payments (12)</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Three different words for three different things: Undo, Cancel (with its deadline), and a repair that is named as a repair.</p>
+    </article>
+
+  </div>
+  <div class="grid c2" style="margin-top:20px">
+
+    <article class="state">
+      <h3><span class="n">13</span>Corrected</h3>
+      <p class="q">Did it take my correction? Will it happen again?</p>
+      <p class="trigger"><b>Trigger:</b> the owner edits a field of a draft, changes a match, or reverts an action.</p>
+      <div class="screen">
+        <div class="panel">
+          <div class="panel-h">Draft bill B-1169 · Northfield Packaging <span class="pill ok">Edited by you</span></div>
+          <div class="panel-b">
+            <div class="diff">Due date: <del>26 Nov 2026</del> <ins>11 Dec 2026</ins></div>
+            <p>Saved. This changes this bill only. The payment prepared for 19 Nov was removed from the batch.</p>
+            <p class="small">The original reading stays visible on the field: read as 26 Nov 2026 from page 1.</p>
+            <div class="bar info"><p>The last 4 invoices from Northfield Packaging say "Net 30" in the footer. Use net 30 for future bills from this supplier?</p></div>
+            <div class="actions"><button class="btn primary">Use net 30 for Northfield</button><button class="btn">Only this bill</button><button class="btn ghost">Undo my edit</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Honest about scope: one bill, unless the owner turns it into a rule. It also says what the correction changed downstream. No "I'll remember that" unless a rule is stored (D11).</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">D11</span>Learns</h3>
+      <p class="q">What does it now assume about me, and can I change that?</p>
+      <p class="trigger"><b>Trigger:</b> the owner accepts a suggested rule, or approves the same kind of payment 6 times in a row without changes. <span class="tc">To confirm: the count, the amount cap, the 90 days.</span></p>
+      <div class="cols c2">
+        <div>
+          <p class="sub">Offering to stop asking</p>
+          <div class="screen">
+            <div class="bar info"><p>You approved the last 6 payments to Redpost Couriers without changes. Schedule them without asking when the bill matches its order exactly and is under $300?</p></div>
+            <p class="small">Never for the same day, so there is always time to cancel. Asks again in 90 days.</p>
+            <div class="actions"><button class="btn primary">Create this rule</button><button class="btn">Keep asking</button></div>
+          </div>
+        </div>
+        <div>
+          <p class="sub">Settings · Inbox Agent · Rules</p>
+          <div class="screen">
+            <ul class="mem">
+              <li><span>Redpost Couriers: schedule matched bills under $300 without asking</span><small>Added 17 Nov by Mara · expires 15 Feb 2027</small><a href="#">Remove</a></li>
+              <li><span>Northfield Packaging: payment terms net 30</span><small>Added 17 Nov by Mara, after a correction</small><a href="#">Remove</a></li>
+              <li><span>Castell Office Supply: don't touch</span><small>Added 2 Nov by Mara · in dispute</small><a href="#">Remove</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="note">Autonomy is earned per supplier and expires. A bill shaped by a rule says so ("Net 30, from your rule"), so a wrong rule can be found and removed.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ======================= NOTES ======================= -->
+<section class="moment m-notes">
+  <h2>Across all states</h2>
+  <div class="notes" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <article><h3>Interruption</h3><ul>
+      <li>Closing Today or the browser never affects a run.</li>
+      <li>Pause and Stop finish or roll back the tool call in flight and start no new one.</li>
+      <li>Everything created before the stop is kept and listed; a half-run batch says which payments went through (D6).</li>
+    </ul></article>
+    <article><h3>Memory</h3><ul>
+      <li>Between runs it keeps only the brief and the rules in Settings · Inbox Agent · Rules. Each has who added it, when and why.</li>
+      <li>A bill shaped by a rule shows the rule.</li>
+      <li>It does not learn silently from edits: a correction changes one bill unless the owner accepts a rule (13, D11).</li>
+    </ul></article>
+    <article><h3>Proactivity</h3><ul>
+      <li>One scheduled message: the 7:00 am e-mail with the outcome line and "Look first".</li>
+      <li>One alert that cannot wait: at 12:00 on a payment date, if a payment scheduled under a rule has not been seen, with the 2:00 pm cutoff in the subject.</li>
+      <li>Everything else waits in Today. Each kind can be turned off where it appears.</li>
+    </ul></article>
+    <article><h3>Cost</h3><ul>
+      <li>The 500-document meter is in the brief, the live log and the report.</li>
+      <li>From 400 of 500 the evening brief says how many documents are waiting and whether they fit.</li>
+      <li>Reaching the limit stops the run safely with its own message and reset date (D10). Files that could not be read do not count (to confirm).</li>
+    </ul></article>
+  </div>
+</section>
+
+<section class="map">
+  <h2>State map</h2>
+  <table>
+    <tr><th>#</th><th>State</th><th>Applies</th><th>Where it shows · why · signal</th></tr>
+    <tr><td>1</td><td>First use</td><td class="yes">Yes</td><td>Today panel before the first run: what it does, what it asks first, what it never does, file types, the 500 limit.</td></tr>
+    <tr><td>2</td><td>Composing</td><td class="no">No</td><td>There is no typed request. The input is the inbox; what tonight's run will use is shown in D1.</td></tr>
+    <tr><td>3</td><td>Working</td><td class="no">No</td><td>No request-and-wait moment: the work happens overnight and is drawn as D4. Morning actions answer in under 2 s or fail into 12.</td></tr>
+    <tr><td>4</td><td>Needs a clarification</td><td class="no">No</td><td>Nobody is there to answer at 1:00 am. Questions are set aside and queue as D5 without blocking the run.</td></tr>
+    <tr><td>5</td><td>Needs my go-ahead</td><td class="yes">Yes</td><td>Payment batch, before and after. Held by the permission table.</td></tr>
+    <tr><td>6</td><td>Answer</td><td class="yes">Yes</td><td>The draft bill with the PDF beside it. Needs the position of each field (to build).</td></tr>
+    <tr><td>7</td><td>Partial</td><td class="yes">Yes</td><td>Draft bill marked Incomplete. Needs page coverage and the sum check (to build).</td></tr>
+    <tr><td>8</td><td>Unsure</td><td class="yes">Yes</td><td>Possible duplicate. Exists only as deterministic checks, never as a model confidence (to build).</td></tr>
+    <tr><td>9</td><td>Doesn't know</td><td class="yes">Yes</td><td>No purchase order found; says where it searched (to confirm).</td></tr>
+    <tr><td>10</td><td>Can't</td><td class="yes">Yes</td><td>Locked or unsupported attachment, on the e-mail it came from.</td></tr>
+    <tr><td>11</td><td>Won't</td><td class="yes">Yes</td><td>Changed bank account or instructions inside content. A product rule in code; no model refusal signal is needed.</td></tr>
+    <tr><td>12</td><td>Broke</td><td class="yes">Yes</td><td>A morning action fails, twice, or the browser is offline. Night failures and the monthly limit are D10.</td></tr>
+    <tr><td>13</td><td>Corrected</td><td class="yes">Yes</td><td>Field edited on a draft; scope stated; optional rule.</td></tr>
+    <tr><td>14</td><td>Handed to a person</td><td class="if">Only if</td><td>Only if Ledgerly has teammates or an accountant role a bill can be assigned to, or a support route for payments. Not drawn: to confirm.</td></tr>
+    <tr><td>D1</td><td>Brief</td><td class="yes">Yes</td><td>"Tonight's run" in Today, every evening, with limits as fields.</td></tr>
+    <tr><td>D2</td><td>Plan</td><td class="yes">Yes</td><td>Six standing steps, outside effects marked, each can be switched off.</td></tr>
+    <tr><td>D3</td><td>Permission</td><td class="yes">Yes</td><td>Mailbox connection prompt, and the permission table.</td></tr>
+    <tr><td>D4</td><td>Working unattended</td><td class="yes">Yes</td><td>Live log from tool-call events (exists).</td></tr>
+    <tr><td>D5</td><td>Needs you</td><td class="yes">Yes</td><td>One queue in Today; never blocks the rest of the run.</td></tr>
+    <tr><td>D6</td><td>Steered</td><td class="yes">Yes</td><td>Pause, Stop, change of brief. Needs a run-state signal (to build).</td></tr>
+    <tr><td>D7</td><td>Handback</td><td class="yes">Yes</td><td>"Last night's run" in Today, and the 7:00 am e-mail.</td></tr>
+    <tr><td>D8</td><td>Review at scale</td><td class="yes">Yes</td><td>Drafts grouped by the check that failed, riskiest first.</td></tr>
+    <tr><td>D9</td><td>Undo and repair</td><td class="yes">Yes</td><td>Activity log: Undo, Cancel until 2:00 pm, or a named repair.</td></tr>
+    <tr><td>D10</td><td>Went wrong while away</td><td class="yes">Yes</td><td>Stopped early (tool failure, window ended) and monthly limit reached.</td></tr>
+    <tr><td>D11</td><td>Learns</td><td class="yes">Yes</td><td>Supplier rules: offered, listed, removable, expiring.</td></tr>
+    <tr><td>D12</td><td>Acts toward others</td><td class="yes">Yes</td><td>Reply to a supplier: full preview, attribution line, always approved.</td></tr>
+  </table>
+</section>
+
+<section class="map">
+  <h2>Signals the system must expose</h2>
+  <table>
+    <tr><th>Signal</th><th>Used by</th><th>Status</th></tr>
+    <tr><td>An event per tool call, with its result</td><td>D4, D7, D9, D10</td><td class="designed">Exists</td></tr>
+    <tr><td>Revert for a draft bill and for a match</td><td>D6, D9, 13</td><td class="designed">Exists</td></tr>
+    <tr><td>Cancel a scheduled payment until 2:00 pm on the payment date</td><td>5, D6, D9</td><td class="designed">Exists</td></tr>
+    <tr><td>Monthly document counter (500 on the standard plan), readable during a run</td><td>D1, D4, D10, Cost</td><td class="generic">To confirm</td></tr>
+    <tr><td>Error type on a failed tool call: timeout, refused, unavailable, encrypted file, unsupported type</td><td>10, 12, D10</td><td class="generic">To confirm</td></tr>
+    <tr><td>What the purchase-order match searched and why it failed (no candidate, total differs, several fit)</td><td>9, D5, D8</td><td class="generic">To confirm</td></tr>
+    <tr><td>Whether an approved bill can go back to draft</td><td>D8, D9</td><td class="generic">To confirm</td></tr>
+    <tr><td>Page and position of each extracted field</td><td>6, 7</td><td class="missing">To build</td></tr>
+    <tr><td>Pages read against pages in the file; lines summed against the total</td><td>7, D8</td><td class="missing">To build</td></tr>
+    <tr><td>Duplicate check: supplier and invoice number against existing bills</td><td>8, D7</td><td class="missing">To build</td></tr>
+    <tr><td>Bank account on the invoice compared with the supplier record</td><td>11, D5, D8</td><td class="missing">To build</td></tr>
+    <tr><td>Run state: running, paused, stopped by the owner, stopped early, finished; and the last e-mail completed</td><td>D4, D6, D10</td><td class="missing">To build</td></tr>
+    <tr><td>Permission gate in code that holds "schedule payment" and "send e-mail" calls for approval</td><td>5, D3, D12</td><td class="missing">To build</td></tr>
+    <tr><td>Count of consecutive unchanged approvals per supplier</td><td>D11</td><td class="missing">To build</td></tr>
+  </table>
+</section>
+
+<p class="foot">Juniper Lane Studio, Mara Ellison, the suppliers, bill and order numbers, amounts, times and dates on this board are invented examples and are listed as such in the spec. Thresholds marked "to confirm" (run time, the $5,000 and $300 caps, 6 approvals, 90 days) are proposals, not facts about Ledgerly. The full list of assumptions and open questions is in the spec.</p>
+
+</main>
+</body>
+</html>

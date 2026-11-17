@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: hr-chat
+expected_outcome: |
+  A state board in HTML and a spec in Spanish (vos) covering the moments of the assistant beyond the good answer, with distinct designs for not knowing, cannot, will not and system failure, a confirmation before sending the vacation request, and triggers tied to signals the system has.
