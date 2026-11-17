@@ -28,6 +28,8 @@
     with two .screen blocks, each under a .sub label. With three or more, make the card .wide and put each
     .sub + .screen pair in a <div> inside a .cols grid. Do not invent new state numbers.
   - On a big board (an agent with 20 cards), use .grid.c2 / .grid.c3 and .span2 / .wide so rows have no holes.
+  - A sensitive-moment card uses the number S and ends with <p class="review">Review with [owner] before shipping</p>.
+  - To show a state at phone width, wrap its .screen in <div class="phone">.
   - For a new design, delete the findings block and the map's Today column.
   - A state is never told by colour alone: coloured messages carry a .tag with words.
 
@@ -98,7 +100,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}   /* fixed columns for big boards */
 .state.span2{grid-column:span 2}
 .m-before{--m:var(--before)} .m-during{--m:var(--during)} .m-answer{--m:var(--answer)} .m-no{--m:var(--no)} .m-after{--m:var(--after)}
-.m-deleg{--m:var(--deleg)} .m-notes{--m:var(--notes)}
+.m-sens{--m:#7a3fb0} .m-deleg{--m:var(--deleg)} .m-notes{--m:var(--notes)}
 
 /* state card */
 .state{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;break-inside:avoid}
@@ -113,6 +115,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .state.wide{grid-column:1/-1}
 .state .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}   /* several screens side by side in a wide card */
 .state .cols .sub{margin-top:0}
+.state .review{margin:.6em 0 0;font-size:.82rem;font-weight:600;color:var(--rule);background:var(--rule-bg);border-radius:8px;padding:.35em .6em}   /* "Review with HR and Legal before shipping" */
 .state .fixes{margin:.6em 0 0;font-size:.82rem;color:var(--fail);font-weight:600}   /* review: which finding this card fixes */
 
 /* the screen: the component in this state */
@@ -129,6 +132,9 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .info .tag{color:var(--info)} .rule .tag{color:var(--rule)} .fail .tag{color:var(--fail)} .warn .tag{color:var(--warn)}
 .bar{border:1px solid var(--line);border-radius:10px;padding:.55em .8em;font-size:.92rem}
 .bar p{margin:0}
+
+.phone{width:360px;max-width:100%;border:8px solid #1b2433;border-radius:28px;padding:6px;background:#fff;margin:0 auto}
+.phone .screen{border:0;border-radius:18px}
 
 /* non-chat surface */
 .panel{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
@@ -429,6 +435,10 @@ h2{font-size:1.25rem;margin:0 0 14px}
     <article><h3>Memory</h3><ul><li>What it remembers inside the conversation and across conversations, and where the user sees it.</li></ul></article>
     <article><h3>Proactivity</h3><ul><li>When it speaks first, on what signal, and how to turn that off.</li></ul></article>
     <article><h3>Cost</h3><ul><li>Limits, what is left, what running out looks like.</li></ul></article>
+    <!-- A sensitive moment is not a note: it gets a card of its own, in its own section placed first or last:
+         <section class="moment m-sens"><h2>Sensitive moment</h2><div class="grid"><article class="state wide">
+         <h3><span class="n">S</span>...</h3> ... <p class="review">Review with [owner] before shipping</p></article></div></section>
+         In the coverage strip it is its own cell (class "if", label "Owner review") and is not counted in the total. -->
   </div>
 </section>
 

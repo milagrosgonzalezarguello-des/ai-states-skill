@@ -2,7 +2,7 @@
 
 For each state: what the user needs, how the system knows it is in that state, the pattern, what to avoid, and copy in Spanish and English. The copy is an example of tone and length, not text to paste: rewrite it for the product's voice and register.
 
-**Contents:** Before (1-2) · During (3-5) · Answer (6-8) · No (9-12) · After (13-14) · Cutting across: interruption, memory, proactivity, cost
+**Contents:** Before (1-2) · During (3-5) · Answer (6-8) · No (9-12) · After (13-14) · Cutting across: interruption, memory, proactivity, cost, sensitive moments
 
 These are the states of AI that answers. When it also acts or works unattended, add the delegation states in `delegation.md`.
 
@@ -204,6 +204,10 @@ The four "no"s. Decide which one it is from the trigger, never from a catch-all.
 
 ### 9. Doesn't know
 
+Before this state can fire, urgent requests must already have been routed: a stolen card, a safety problem or a sensitive moment (see the end of this file) must never land in "I couldn't find that".
+
+Name what was looked for and where, so the user can tell "it does not exist" from "it looked in the wrong place". If the user rephrases and it is still not found, do not repeat the message: offer the person or the plain documents.
+
 **The user is asking:** Is there no answer, or did it not look in the right place?
 
 **Trigger:** nothing relevant retrieved; the question is in scope but the information is not there.
@@ -370,3 +374,36 @@ Credits, quotas, spend, and the time a long task takes.
 - Show what is left where the user decides whether to use it, not only when it runs out.
 - Running out mid-task is a "broke" state with its own message: what was completed, what the limit is, when it resets or how to get more.
 - For agents that spend money or resources, the limit is set in the brief (D1) and reaching it stops the run safely (D10).
+
+### Sensitive moments
+
+Sometimes what the user writes is not a request for the feature at all: they describe harassment, an accident, a threat, a dismissal, a health scare, or that they are not coping. It happens in every product where people can type freely, and most of all in the ones about work, money, health and study. If it is not designed, the user gets the ordinary answer - a policy summary, a cheerful suggestion, or "I couldn't find that" - at the worst possible moment.
+
+Design it like a state. An undesigned sensitive moment does more harm than a draft one, so draw the card with real copy and mark it **to review with its owner** (HR, legal, safety, clinical - name who) before it ships. This is the one card where your copy is a proposal by definition.
+
+**Trigger:** a classifier or a rule on the input, separate from the refusal signal. Usually *to build*. Say what it should catch for this product (three to five concrete kinds of message), and that it should lean toward catching too much.
+
+**Pattern:**
+- Drop the task. No summary, no sources, no "here are some policies", no examples of what else to ask.
+- One plain line that takes in what was said, without evaluating it or the person. No diagnosis, no advice, no "I understand how you feel".
+- The real route, first and specific: who, how, and when they answer. If the route has hours, say what to do outside them. If there is an emergency number for this country or company, it goes above everything else when life or safety is at risk.
+- Say who will and will not see this conversation, only if you know. A wrong reassurance here is worse than none.
+- No probing questions. The product is not the one who should take the account.
+- Nothing is done on the user's behalf without them choosing it: no ticket opened automatically, nobody notified.
+- The message is not offered thumbs, regenerate or "was this helpful?".
+- The conversation can continue normally afterwards if the user goes on to something else.
+- A message that mixes it with a real question, or that may be a figure of speech ("this essay is killing me, when is it due?"): one short line with the route, and the question answered or kept one press away. This is what makes catching too much cheap.
+- Detection will miss some. A permanent, quiet entry point to the same route ("Support and urgent help") stays visible in the feature, whatever the model says.
+- The card is fixed copy, not generated: it must be the same every time and still appear when the model is down or a usage limit is reached.
+
+**Avoid:** a refusal ("I can't help with that"); the error style; a list of ten resources; a disclaimer about being an AI as the first line; carrying on as if nothing was said.
+
+| | Formal Spanish | Informal Spanish (vos) | English |
+|---|---|---|---|
+| Opening | "Lo que cuenta es serio y merece que lo atienda una persona." | "Lo que contás es serio y merece que lo atienda una persona." | "What you're describing is serious, and a person should handle it." |
+| Route | "Puede hablar con [equipo] por [canal], de [horario]. Fuera de ese horario: [alternativa]." | "Podés hablar con [equipo] por [canal], de [horario]. Fuera de ese horario: [alternativa]." | "You can reach [team] by [channel], [hours]. Outside those hours: [alternative]." |
+| Action | **Ver cómo contactarlos** | **Ver cómo contactarlos** | **See how to reach them** |
+
+The brackets show where the product's facts go. On the board, fill them with what the user told you (the team, its hours, its line) or with a realistic example marked "to confirm"; never leave brackets on a card. If you do not know the country, do not guess an emergency number: write the line with the organisation's own urgent contact and list the public emergency number as the first open question for the owner.
+
+**Measure:** how often it fires and whether the route was opened - never the content of the message in ordinary analytics.

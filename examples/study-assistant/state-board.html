@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>State board - Study assistant (student portal)</title>
+<style>
+:root{
+  --ink:#1b2433; --muted:#5b6678; --line:#d9e0ea; --bg:#f4f6fa; --card:#ffffff;
+  --brand:#1f4fd8;
+  --user:#e8eefc;
+  --before:#6b4fd8; --during:#0b7a75; --answer:#1f4fd8; --no:#9a5b00; --after:#5b6678; --sens:#a3246b; --notes:#3b4658;
+  --info-bg:#eef3fb; --info:#2b4a7d;
+  --rule-bg:#f6f1e7; --rule:#7a5200;
+  --fail-bg:#fdeeee; --fail:#a3262f;
+  --warn-bg:#fff6dd; --warn:#7a5200;
+  --care-bg:#f7eef4; --care:#7d1d52;
+  --ok:#0b7a52;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.5}
+main{max-width:1560px;margin:0 auto;padding:40px 28px 80px}
+h2{font-size:1.25rem;margin:0 0 14px}
+
+.head h1{font-size:2rem;line-height:1.2;margin:0 0 .2em}
+.head p{margin:.2em 0;color:var(--muted);font-size:1.05rem;max-width:80ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}
+.meta li{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.25em .9em;font-size:.9rem}
+.meta b{font-weight:600}
+
+.coverage{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.coverage .sum{margin:0 0 12px;font-size:1.05rem}
+.coverage .sum b{font-size:1.5rem;font-weight:700;margin-right:.15em}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.cells li{border:1px solid var(--line);border-left-width:6px;border-radius:8px;padding:.4em .6em;font-size:.86rem;line-height:1.3}
+.cells b{display:block;font-size:.72rem;letter-spacing:.03em;text-transform:uppercase}
+.cells .designed{border-left-color:var(--ok)} .cells .designed b{color:var(--ok)}
+.cells .if{border-left-color:var(--info);border-style:dashed;border-left-style:solid} .cells .if b{color:var(--info)}
+.cells .na{color:var(--muted);border-style:dashed} .cells .na b{color:var(--muted)}
+.cells .rev{border-left-color:var(--sens)} .cells .rev b{color:var(--sens)}
+
+.moment{margin-top:44px}
+.moment>h2{display:flex;align-items:baseline;gap:.6em;padding-bottom:8px;border-bottom:3px solid var(--m)}
+.moment>h2 span{font-size:.9rem;font-weight:400;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.state.span2{grid-column:span 2}
+.m-before{--m:var(--before)} .m-during{--m:var(--during)} .m-answer{--m:var(--answer)} .m-no{--m:var(--no)} .m-after{--m:var(--after)}
+.m-sens{--m:var(--sens)} .m-notes{--m:var(--notes)}
+
+.state{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;break-inside:avoid}
+.state>h3{display:flex;align-items:center;gap:.55em;font-size:1.08rem;margin:0}
+.state>h3 .n{flex:none;display:grid;place-items:center;min-width:1.75rem;height:1.75rem;padding:0 .35em;border-radius:999px;background:var(--m);color:#fff;font-size:.85rem;font-weight:700}
+.state .q{margin:.35em 0 .1em;color:var(--muted);font-style:italic}
+.state .trigger{margin:.5em 0 .9em;font-size:.88rem;color:var(--ink);background:var(--bg);border-radius:8px;padding:.45em .7em}
+.state .trigger b{font-weight:600}
+.tc{color:var(--warn);font-weight:600}
+.state .note{margin:.8em 0 0;font-size:.88rem;color:var(--muted)}
+.state .sub{margin:14px 0 6px;font-size:.75rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.state.wide{grid-column:1/-1}
+.state .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.state .cols.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.state .cols .sub{margin-top:0}
+.state .review{margin:.9em 0 0;font-size:.9rem;font-weight:600;color:var(--rule);background:var(--rule-bg);border-radius:8px;padding:.5em .7em}
+.state ul.rules{margin:.8em 0 0;padding-left:1.1em;font-size:.88rem;color:var(--muted);columns:2;column-gap:28px}
+.state ul.rules li{margin:.15em 0;break-inside:avoid}
+
+.screen{border:1px solid var(--line);border-radius:12px;background:#fbfcfe;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:94%;padding:.6em .85em;border-radius:14px;font-size:.93rem}
+.msg p{margin:0 0 .45em}.msg p:last-child{margin:0}
+.msg.user{align-self:flex-end;background:var(--user);border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.info,.bar.info{background:var(--info-bg);border-color:#c9d8ee}
+.msg.rule,.bar.rule{background:var(--rule-bg);border-color:#e6d6b3}
+.msg.fail,.bar.fail{background:var(--fail-bg);border-color:#f1c4c7}
+.msg.warn,.bar.warn{background:var(--warn-bg);border-color:#ecd9a0}
+.msg.care{background:var(--care-bg);border-color:#e3c5d6;max-width:100%}
+.tag{display:block;font-size:.72rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:.25em}
+.info .tag{color:var(--info)} .rule .tag{color:var(--rule)} .fail .tag{color:var(--fail)} .warn .tag{color:var(--warn)} .care .tag{color:var(--care)}
+.bar{border:1px solid var(--line);border-radius:10px;padding:.55em .8em;font-size:.9rem}
+.bar p{margin:0}
+
+.phone{width:360px;max-width:100%;border:7px solid #1b2433;border-radius:28px;padding:5px;background:#fff;margin:0 auto}
+.phone .screen{border:0;border-radius:18px}
+.appbar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.82rem;padding:0 2px 8px;border-bottom:1px solid var(--line)}
+.appbar b{font-size:.92rem}
+.appbar a{color:var(--care);font-weight:600;text-decoration:underline;white-space:nowrap}
+
+.chips,.actions{display:flex;flex-wrap:wrap;gap:8px}
+.chips button,.btn{font:inherit;font-size:.86rem;border-radius:999px;padding:.4em .9em;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-align:left}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.btn.ghost{border-color:transparent;color:var(--brand)}
+.btn.call{display:block;width:100%;border-radius:12px;padding:.6em .9em;font-weight:600;text-align:left;border-color:#c9a6ba}
+.btn.call small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.btn.call.first{background:var(--care);border-color:var(--care);color:#fff}
+.btn.call.first small{color:#f3dde9}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.src{display:inline-flex;align-items:center;gap:.35em;font-size:.78rem;border:1px solid var(--line);border-radius:6px;padding:.1em .5em;background:#fff;color:var(--brand);text-decoration:none}
+.src::before{content:"";flex:none;width:.5em;height:.5em;border-radius:2px;background:var(--brand)}
+.quote{margin:0;border-left:3px solid var(--brand);background:#f7f9fc;padding:.45em .7em;font-size:.86rem;border-radius:0 8px 8px 0}
+.quote cite{display:block;font-style:normal;font-size:.76rem;color:var(--muted);margin-top:.2em}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.2em .8em;margin:0;font-size:.86rem}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.pill{display:inline-block;font-size:.75rem;font-weight:600;border-radius:999px;padding:.1em .6em;border:1px solid var(--line);background:#fff}
+.small{font-size:.8rem;color:var(--muted);margin:0}
+.fb{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fb .btn{font-size:.78rem;padding:.25em .7em}
+
+.steps{list-style:none;margin:0;padding:0;font-size:.9rem}
+.steps li{display:flex;gap:.55em;align-items:center;padding:.15em 0;color:var(--muted)}
+.steps li::before{content:"";flex:none;width:.7em;height:.7em;border-radius:50%;border:2px solid var(--line)}
+.steps li.done{color:var(--ink)} .steps li.done::before{background:var(--during);border-color:var(--during)}
+.steps li.now{color:var(--ink);font-weight:600} .steps li.now::before{border-color:var(--during);border-top-color:transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.steps li.now::before{animation:none;border-top-color:var(--during)}}
+
+.preview{border:1px dashed #b9c5d8;border-radius:10px;background:#fff;padding:.7em .85em;font-size:.88rem}
+.lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:.2em}
+.panel{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:.5em .8em;border-bottom:1px solid var(--line);font-weight:600;font-size:.9rem;background:#f7f9fc}
+.panel-b{padding:.75em .8em;font-size:.9rem;display:flex;flex-direction:column;gap:8px}
+
+.composer{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;background:#fff;padding:5px 5px 5px 14px}
+.composer span{flex:1;font-size:.9rem;color:var(--muted)}
+.composer span.filled{color:var(--ink)}
+.composer .btn{padding:.35em 1em}
+
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.notes article{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;break-inside:avoid}
+.notes h3{margin:0 0 .3em;font-size:1.02rem}
+.notes ul{margin:0;padding-left:1.1em;font-size:.92rem}.notes li{margin:.2em 0}
+
+.map{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.map table{border-collapse:collapse;width:100%;font-size:.92rem}
+.map th,.map td{text-align:left;padding:.45em .6em;border-bottom:1px solid var(--line);vertical-align:top}
+.map th{color:var(--muted);font-weight:600}
+.map .yes{font-weight:600;color:var(--ok)} .map .no{color:var(--muted)} .map .if{font-weight:600;color:var(--warn)}
+.map .exists{color:var(--ok);font-weight:600} .map .confirm{color:var(--warn);font-weight:600} .map .build{color:var(--fail);font-weight:600}
+
+.foot{margin-top:44px;color:var(--muted);font-size:.9rem;max-width:110ch}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}.state.span2{grid-column:auto}.state .cols.four{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.state ul.rules{columns:1}}
+@media print{body{background:#fff}main{max-width:none;padding:0}.state,.map,.coverage{border-color:#bbb}}
+</style>
+</head>
+<body>
+<main>
+
+<header class="head">
+  <h1>Study assistant: state board</h1>
+  <p>A chat in the student portal that answers questions about courses, deadlines and regulations from the University's official documents, for about 12,000 students. Read-only: it takes no actions.</p>
+  <ul class="meta">
+    <li><b>Surface:</b> chat, drawn at phone width</li>
+    <li><b>Stakes:</b> medium; high for deadlines and regulations students act on</li>
+    <li><b>Autonomy:</b> none (answers only)</li>
+    <li><b>Register:</b> plain English, "you", no slang <span class="tc">to confirm</span></li>
+    <li><b>Style:</b> neutral template, not the portal's own look</li>
+    <li><b>Version:</b> 16 November 2026, new design</li>
+  </ul>
+</header>
+
+<section class="coverage">
+  <h2>Coverage</h2>
+  <p class="sum"><b>12 of 14</b> answer states apply and each has a card. 1 more waits on a signal (drawn). 1 does not apply. Plus the sensitive-moment card, which is a proposal until its owners review it.</p>
+  <ul class="cells">
+    <li class="designed"><b>Designed</b>1 First use</li>
+    <li class="designed"><b>Designed</b>2 Composing</li>
+    <li class="designed"><b>Designed</b>3 Working</li>
+    <li class="designed"><b>Designed</b>4 Needs a clarification</li>
+    <li class="na"><b>Not applicable</b>5 Needs my go-ahead</li>
+    <li class="designed"><b>Designed</b>6 Answer</li>
+    <li class="designed"><b>Designed</b>7 Partial answer</li>
+    <li class="if"><b>To confirm</b>8 Unsure</li>
+    <li class="designed"><b>Designed</b>9 Doesn't know</li>
+    <li class="designed"><b>Designed</b>10 Can't do that</li>
+    <li class="designed"><b>Designed</b>11 Won't do that</li>
+    <li class="designed"><b>Designed</b>12 Broke</li>
+    <li class="designed"><b>Designed</b>13 Corrected</li>
+    <li class="designed"><b>Designed</b>14 Handed to a person</li>
+    <li class="rev"><b>Designed, to review</b>S Sensitive moment</li>
+    <li class="na"><b>Not applicable</b>D1-D12 Delegation</li>
+  </ul>
+</section>
+
+<!-- ================= SENSITIVE ================= -->
+<section class="moment m-sens">
+  <h2>Sensitive moment <span>the student writes about harm, distress or danger instead of a study question. Shown first because it is the card that must not ship undesigned.</span></h2>
+  <div class="grid">
+    <article class="state wide">
+      <h3><span class="n">S</span>Sensitive moment</h3>
+      <p class="q">I said something that is not about coursework. Does anyone hear it, and who can actually help me now?</p>
+      <p class="trigger"><b>Trigger:</b> a classifier on every incoming message, run before retrieval and separate from the refusal signal. Two levels: <b>risk now</b> (suicidal thoughts, self-harm, a threat, assault, being followed, a medical emergency, for the student or someone else) and <b>distress</b> (not coping, panic, harassment or bullying described, bereavement). It leans toward catching too much. The screen also depends on whether counselling is open now. <span class="tc">To build: the classifier and the "counselling open now" signal (clock plus closure days).</span></p>
+      <div class="cols four">
+        <div>
+          <p class="sub">A. Risk now, any hour</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">i dont think i can keep going. ive been thinking about ending it</div>
+            <div class="msg ai care">
+              <span class="tag">Urgent help</span>
+              <p>What you've written is serious, and a person should be helping you with it now.</p>
+              <p>This chat doesn't alert anyone. To reach a person:</p>
+            </div>
+            <button class="btn call first">Call 999<small>If you're in immediate danger or have hurt yourself</small></button>
+            <button class="btn call">Call Campus Security · 01632 960 100<small>Answers day and night, and can come to you on campus</small></button>
+            <button class="btn call">See how to reach counselling<small>Open now, until 17:00 today</small></button>
+            <div class="composer"><span>Write a message</span><button class="btn primary">Send</button></div>
+          </div></div>
+          <p class="note">For a threat, assault or being followed, the first line becomes "What you're describing is serious, and you should get to a person now." Campus Security moves to the top; 999 stays.</p>
+        </div>
+        <div>
+          <p class="sub">B. Distress, counselling open (Mon-Fri 9-17)</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">i failed two modules and i cant cope anymore. havent slept properly in days</div>
+            <div class="msg ai care">
+              <span class="tag">Support</span>
+              <p>What you're describing matters, and it's something a person at the University should help with.</p>
+              <p>The counselling team is open now, until 17:00 today.</p>
+            </div>
+            <button class="btn call first">See how to reach counselling<small>Open now · Monday to Friday, 9:00 to 17:00</small></button>
+            <button class="btn call">Call Campus Security · 01632 960 100<small>Day and night, if you feel unsafe</small></button>
+            <p class="small">This chat doesn't alert anyone.</p>
+            <div class="composer"><span>Write a message</span><button class="btn primary">Send</button></div>
+          </div></div>
+          <p class="note">No summary of the resit rules, no sources, no examples. If the student then asks about resits, the assistant answers normally.</p>
+        </div>
+        <div>
+          <p class="sub">C. Distress, counselling closed (Saturday 23:40)</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">i failed two modules and i cant cope anymore. havent slept properly in days</div>
+            <div class="msg ai care">
+              <span class="tag">Support</span>
+              <p>What you're describing matters, and it's something a person at the University should help with.</p>
+              <p>The counselling team is closed now and opens on Monday at 9:00. Until then, Campus Security answers day and night.</p>
+            </div>
+            <button class="btn call first">Call Campus Security · 01632 960 100<small>Answers now, 24 hours a day</small></button>
+            <button class="btn call">See how to reach counselling<small>Opens Monday at 9:00</small></button>
+            <button class="btn call">Call 999<small>If you're in immediate danger</small></button>
+            <p class="small">This chat doesn't alert anyone.</p>
+            <div class="composer"><span>Write a message</span><button class="btn primary">Send</button></div>
+          </div></div>
+          <p class="note">Open question for the owner: is the security line the right night route for distress, or is there a night support line that should come first?</p>
+        </div>
+        <div>
+          <p class="sub">D. Unclear, with a study question in the same message</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">this essay is killing me i want to die lol. when is the PSY2041 essay due</div>
+            <div class="msg ai care">
+              <span class="tag">Support</span>
+              <p>If any of that is more than a figure of speech, there are people at the University to talk to: counselling is open now until 17:00, and Campus Security answers day and night.</p>
+            </div>
+            <div class="actions"><button class="btn">See support options</button></div>
+            <div class="msg ai">
+              <p>Your question about the PSY2041 essay is still here.</p>
+            </div>
+            <div class="actions"><button class="btn primary">Answer my question</button></div>
+            <div class="composer"><span>Write a message</span><button class="btn primary">Send</button></div>
+          </div></div>
+          <p class="note">Makes a false alarm cost one press instead of a lecture. The question is held, never dropped. Whether to answer straight away at this level is the owner's call.</p>
+        </div>
+      </div>
+      <ul class="rules">
+        <li>The study task is dropped in A, B and C: no answer, no sources, no example questions.</li>
+        <li>Nothing is done for the student: nobody is notified, no referral is opened. The card says so ("This chat doesn't alert anyone").</li>
+        <li>No thumbs, no regenerate, no "was this useful?" on these messages.</li>
+        <li>No questions back to the student about what happened. The assistant does not take the account.</li>
+        <li>Phone buttons dial on a phone; on a desktop they show the number to copy.</li>
+        <li>Not the refusal style, not the error style, and the tag words carry the state, not the colour.</li>
+        <li>If the classifier misses, "Support &amp; urgent help" is in the header of every screen and opens the same routes.</li>
+        <li>Logged: that it fired, the level, and which route was opened. Never the message text in ordinary analytics.</li>
+        <li>If the answer service is down, this card still shows: it is fixed copy and does not need the model.</li>
+        <li>The conversation goes on normally afterwards if the student moves to something else.</li>
+      </ul>
+      <p class="review">Review with the Head of Counselling (Student Services), the Head of Campus Security and the University's safeguarding lead before shipping. <span class="tc">To confirm on this card:</span> the security number (01632 960 100 is an example); 999 as the emergency number; that Campus Security takes calls from students in distress and can attend on campus; how counselling is reached (phone, booking page, drop-in) and its closure days; whether this chat really alerts nobody and who can read it; whether a night support line exists.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ================= BEFORE ================= -->
+<section class="moment m-before">
+  <h2>Before <span>the student has not sent anything yet</span></h2>
+  <div class="grid">
+
+    <article class="state">
+      <h3><span class="n">1</span>First use</h3>
+      <p class="q">What is this, and what can I ask it?</p>
+      <p class="trigger"><b>Trigger:</b> no messages in this conversation.</p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg ai" style="max-width:100%">
+          <p><b>Answers questions about courses, deadlines and regulations</b>, from the University's official documents for 2026/27.</p>
+          <p>It can't see your marks, timetable or any personal record, and it can't submit anything for you.</p>
+          <p>It can be wrong. Every answer links to the passage it came from: open it before you act on a deadline.</p>
+        </div>
+        <div class="chips">
+          <button>When does the spring exam period start?</button>
+          <button>How do I ask for a coursework extension?</button>
+          <button>What happens if I fail a module?</button>
+          <button>What do I need before taking PSY2041?</button>
+        </div>
+        <p class="small"><a href="#" style="color:var(--brand)">Who can see this chat and how long it is kept</a></p>
+        <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">The "can be wrong" line appears here once, not under every answer. <span class="tc">To confirm: the privacy facts behind the link; the four examples against real frequent questions.</span></p>
+    </article>
+
+    <article class="state span2">
+      <h3><span class="n">2</span>Composing</h3>
+      <p class="q">What will it use? Is what I'm sending fine?</p>
+      <p class="trigger"><b>Trigger:</b> the student is typing. <span class="tc">To confirm: the 2,000-character limit; that follow-ups carry the course and level from earlier turns.</span></p>
+      <div class="cols">
+        <div>
+          <p class="sub">New question</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <p class="small">Searches: Academic Regulations, Academic Calendar, course and module handbooks, 2026/27.</p>
+            <div class="composer"><span class="filled">when is the last day to drop a module</span><button class="btn primary">Send</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">Follow-up, and a message that is too long</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <p class="small">Answering about: <span class="pill">PSY2041 ×</span> <span class="pill">Undergraduate ×</span></p>
+            <div class="bar info"><p>This message is 2,340 characters; the limit is 2,000. Nothing was removed: shorten it and send.</p></div>
+            <div class="composer"><span class="filled">…and my tutor said in the email below that</span><button class="btn primary" disabled>Send</button></div>
+          </div></div>
+        </div>
+      </div>
+      <p class="note">No attachments in this version, so there is nothing else to validate. Typos, no punctuation and dictated text are normal input on a phone and are never flagged.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ================= DURING ================= -->
+<section class="moment m-during">
+  <h2>During <span>the question is on its way</span></h2>
+  <div class="grid">
+
+    <article class="state span2">
+      <h3><span class="n">3</span>Working</h3>
+      <p class="q">Is it doing something? How long? Can I stop it?</p>
+      <p class="trigger"><b>Trigger:</b> question sent, answer not complete. <span class="tc">To confirm: the service streams text and reports the "searching" and "writing" steps; if not, one honest line "Finding an answer…". To confirm: a request survives the phone locking.</span></p>
+      <div class="cols">
+        <div>
+          <p class="sub">1 to 10 seconds</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">when is the last day to ask for an extension on the PSY2041 essay</div>
+            <div class="msg ai">
+              <ul class="steps">
+                <li class="done">Searching the regulations and handbooks</li>
+                <li class="now">Writing the answer</li>
+              </ul>
+            </div>
+            <div class="composer"><span>Ask about a course or deadline</span><button class="btn">Stop</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">Over 10 seconds</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">when is the last day to ask for an extension on the PSY2041 essay</div>
+            <div class="msg ai">
+              <ul class="steps">
+                <li class="now">Searching the regulations and handbooks</li>
+                <li>Writing the answer</li>
+              </ul>
+              <p class="small" style="margin-top:.4em">This is taking longer than usual. You can stop, or leave this page: the answer will be here when you come back.</p>
+            </div>
+            <div class="composer"><span>Ask about a course or deadline</span><button class="btn">Stop</button></div>
+          </div></div>
+        </div>
+      </div>
+      <p class="note">Under 1 second: no loader. Stop sits where Send was. After 30 seconds with nothing, it becomes 12 Broke (timeout).</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">4</span>Needs a clarification</h3>
+      <p class="q">What does it need from me?</p>
+      <p class="trigger"><b>Trigger:</b> the answer differs by level, programme, module or year and the question does not say which. <span class="tc">To build: the model returns "needs: level". To confirm: if the portal passes the student's programme and year, most of these disappear.</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">when is the last day to drop a module</div>
+        <div class="msg ai"><p>Which level are you studying at? The date is different for each.</p></div>
+        <div class="chips">
+          <button>Undergraduate</button>
+          <button>Taught postgraduate</button>
+          <button>Research degree</button>
+          <button>Something else</button>
+        </div>
+        <div class="composer"><span>Or type your answer</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">One question, never a chain. The choice is kept for the conversation and shown in the composer (card 2).</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ================= ANSWER ================= -->
+<section class="moment m-answer">
+  <h2>Answer <span>what it stands on, and how far to rely on it</span></h2>
+  <div class="grid">
+
+    <article class="state">
+      <h3><span class="n">6</span>Answer</h3>
+      <p class="q">What is this based on? What can I do with it?</p>
+      <p class="trigger"><b>Trigger:</b> complete answer, every claim tied to a retrieved passage, no flags. <span class="tc">To confirm: passages carry document, section, link and "last updated".</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">when is the last day to ask for an extension on the PSY2041 essay</div>
+        <div class="msg ai">
+          <p><b>Wednesday 2 December 2026, 16:00.</b></p>
+          <p>Extension requests must arrive at least 48 hours before the deadline. <a class="src" href="#">Academic Regulations 2026/27 · 7.3</a></p>
+          <p>The PSY2041 essay is due Friday 4 December 2026 at 16:00. <a class="src" href="#">PSY2041 handbook · Assessment</a></p>
+          <p class="small">I worked out the date from these two passages. Regulations updated 1 Sep 2026; handbook updated 28 Sep 2026.</p>
+        </div>
+        <div class="fb"><button class="btn">Copy</button><button class="btn">Useful</button><button class="btn">Not useful</button><button class="btn ghost">Ask Student Services</button></div>
+        <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">Answer first, in the first two lines. A source opens as a sheet over the chat, at the quoted passage. Anything the assistant calculated is labelled as calculated. Dates and section numbers here are examples.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">7</span>Partial answer</h3>
+      <p class="q">Which part is done and which is not?</p>
+      <p class="trigger"><b>Trigger:</b> the question has several parts and at least one has no supporting passage. <span class="tc">To build: the answer comes back split by part, each with its passages or "none".</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">when are the resits for PSY2041 and how much is the resit fee</div>
+        <div class="msg ai warn">
+          <span class="tag">Partly answered</span>
+          <p>I found the resit dates but not the fee.</p>
+          <p><b>Dates:</b> the resit period is 16 to 27 August 2027. <a class="src" href="#">Academic Calendar 2026/27 · Resits</a></p>
+          <p><b>Fee:</b> not in the documents I can search.</p>
+        </div>
+        <div class="actions"><button class="btn primary">Ask Student Services about the fee</button><button class="btn">Open the calendar</button></div>
+        <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">What is missing is said before what was found, and marked where the answer would have been.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">8</span>Unsure <span class="pill" style="font-weight:600;color:var(--warn)">only if</span></h3>
+      <p class="q">How much should I rely on this?</p>
+      <p class="trigger"><b>Trigger:</b> two retrieved passages give different values for the same thing, or the only passage is from an earlier academic year. <span class="tc">Only if documents carry their year and the system can compare passages. To build. Without it, this folds into card 6.</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">how many days late can i hand in coursework</div>
+        <div class="msg ai warn">
+          <span class="tag">Sources disagree</span>
+          <p>Two official documents say different things:</p>
+          <p><b>5 working days</b>, with 5 marks off per day. <a class="src" href="#">Academic Regulations 2026/27 · 7.5</a></p>
+          <p><b>7 days.</b> <a class="src" href="#">PSY2041 handbook · updated Sep 2025</a></p>
+          <p>The Regulations are newer. Check with your module leader before relying on either.</p>
+        </div>
+        <div class="actions"><button class="btn">Open both passages</button><button class="btn">Ask Student Services</button></div>
+        <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">Words about one specific doubt. No percentage, no hedging of every sentence.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ================= NO ================= -->
+<section class="moment m-no">
+  <h2>No <span>four different reasons, four different messages</span></h2>
+  <div class="grid">
+
+    <article class="state">
+      <h3><span class="n">9</span>Doesn't know</h3>
+      <p class="q">Is there no answer, or did it not look in the right place?</p>
+      <p class="trigger"><b>Trigger:</b> the question is about courses, deadlines or rules and no passage scores above the threshold. <span class="tc">To confirm: a retrieval score exists; the threshold.</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">is there a discount on gown hire for scholarship students</div>
+        <div class="msg ai info">
+          <span class="tag">Not found</span>
+          <p>I couldn't find anything about gown hire discounts. I searched the Academic Regulations, the Academic Calendar and the course and module handbooks for 2026/27.</p>
+        </div>
+        <div class="actions"><button class="btn">Ask it another way</button><button class="btn">Ask Student Services</button></div>
+        <div class="composer"><span class="filled">is there a discount on gown hire for scholarship students</span><button class="btn primary">Send</button></div>
+      </div></div>
+      <p class="note">Answer style, not error style: nothing broke. The model is told to answer only from passages, so this state is what it does instead of guessing. "Ask it another way" puts the question back in the box.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">10</span>Can't do that</h3>
+      <p class="q">Who or what can?</p>
+      <p class="trigger"><b>Trigger:</b> the request needs a personal record (marks, timetable, fees owed) or an action (submit, book, enrol), or is not about study at the University. <span class="tc">To build: request-type classification and the list of portal destinations.</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">what mark did i get for my stats exam</div>
+        <div class="msg ai info">
+          <span class="tag">Can't see this</span>
+          <p>I can't see your marks or any of your personal records. Your results are in the portal under <b>My results</b>.</p>
+        </div>
+        <div class="actions"><button class="btn primary">Open My results</button><button class="btn">How marks are released</button></div>
+        <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">For an action: "I can't submit an extension request. The form is in <b>My modules › PSY2041 › Extensions</b>. I can tell you what it asks for." For something unrelated to study: one line on what it does answer, no examples list. Portal section names are examples.</p>
+    </article>
+
+    <article class="state">
+      <h3><span class="n">11</span>Won't do that</h3>
+      <p class="q">Is it me, or the rule? What can I ask instead?</p>
+      <p class="trigger"><b>Trigger:</b> a rule blocks the request: writing assessed work, ruling on an individual case, or the model's own refusal. <span class="tc">To confirm: the list of rules with the University; a refusal flag separate from an empty answer.</span></p>
+      <div class="phone"><div class="screen">
+        <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+        <div class="msg user">write my 2000 word essay on attachment theory for PSY2041</div>
+        <div class="msg ai rule">
+          <span class="tag">Not something I do</span>
+          <p>I can't write assessed work for you. I can show you what the Academic Integrity Policy says about getting help, or find the brief and deadline for this essay.</p>
+        </div>
+        <div class="actions"><button class="btn">What help is allowed</button><button class="btn">Find the essay brief</button></div>
+        <p class="small"><a href="#" style="color:var(--brand)">This wasn't a request for assessed work</a></p>
+        <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+      </div></div>
+      <p class="note">One sentence, no lecture, no word "error". For "Will my appeal succeed?": "I can't judge an individual case. I can show you the grounds for appeal and who decides."</p>
+    </article>
+
+    <article class="state wide">
+      <h3><span class="n">12</span>Broke</h3>
+      <p class="q">Did I lose my question? Do I try again?</p>
+      <p class="trigger"><b>Trigger:</b> timeout (30 s), service error, or the device is offline; third screen after the same question fails twice. <span class="tc">To build: an error type the app can read (timeout / service / offline / too long). To confirm: whether a per-student daily limit exists; if it does, it needs its own message with the reset time.</span></p>
+      <div class="cols">
+        <div>
+          <p class="sub">Temporary failure</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">what happens if i fail a module</div>
+            <div class="msg ai fail">
+              <span class="tag">Didn't work</span>
+              <p>I couldn't get an answer just now. The problem is on our side, and your question is saved.</p>
+            </div>
+            <div class="actions"><button class="btn primary">Try again</button></div>
+            <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">Offline</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg ai"><p><b>Wednesday 2 December 2026, 16:00.</b> Extension requests must arrive at least 48 hours before…</p></div>
+            <div class="bar fail"><span class="tag">No connection</span><p>You're offline, so this hasn't been sent. Your question is still in the box, and earlier answers stay readable.</p></div>
+            <div class="composer"><span class="filled">what happens if i fail a module</span><button class="btn primary" disabled>Send</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">Second failure in a row</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">what happens if i fail a module</div>
+            <div class="msg ai fail">
+              <span class="tag">Still not working</span>
+              <p>I still can't get an answer, and trying again now is unlikely to help. Your question is saved. You can look it up in the documents or ask a person.</p>
+              <p class="small">Reference for support: SA-4F2K · <a href="#" style="color:var(--brand)">Copy</a></p>
+            </div>
+            <div class="actions"><button class="btn primary">Search the documents</button><button class="btn">Ask Student Services</button></div>
+            <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+          </div></div>
+        </div>
+      </div>
+      <p class="note">The message stays in the thread where the answer would have been, never a toast. An answer that was streaming when it failed stays, marked "Answer interrupted". A very long conversation gets: "This conversation is too long for me to keep all of it in mind. Start a new one; I'll carry over your course and level." The reference is an example.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ================= AFTER ================= -->
+<section class="moment m-after">
+  <h2>After <span>the student pushes back, or needs a person</span></h2>
+  <div class="grid">
+
+    <article class="state wide">
+      <h3><span class="n">13</span>Corrected</h3>
+      <p class="q">Did it take my correction? Will it happen again?</p>
+      <p class="trigger"><b>Trigger:</b> the student says an answer is wrong (the assistant searches again), or presses <b>Not useful</b>. <span class="tc">To build: where reports go and who reads them; "the team that maintains the assistant" is assumed to exist.</span></p>
+      <div class="cols">
+        <div>
+          <p class="sub">Checked again: the answer was out of date</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">thats wrong, the essay is due the 11th not the 4th</div>
+            <div class="msg ai">
+              <p>I checked again and the earlier answer was out of date. The handbook was updated on 9 November: the essay is due <b>Friday 11 December 2026, 16:00</b>. <a class="src" href="#">PSY2041 handbook · Assessment</a></p>
+              <p>So the last moment to ask for an extension is <b>Wednesday 9 December, 16:00</b>.</p>
+              <p class="small">This corrects this conversation. I've reported the earlier answer to the team that maintains the assistant.</p>
+            </div>
+            <div class="fb"><button class="btn">Copy</button><button class="btn">See the earlier answer</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">Checked again: the document still says the same</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg user">thats wrong, the essay is due the 11th not the 4th</div>
+            <div class="msg ai">
+              <p>I checked again and the handbook still says 4 December:</p>
+              <blockquote class="quote">"Essay (2,000 words): submit by 16:00 on Friday 4 December 2026."<cite>PSY2041 handbook · Assessment · updated 28 Sep 2026</cite></blockquote>
+              <p>If the date was changed in a lecture or an email, the handbook may be behind. Your module leader can confirm which one counts.</p>
+            </div>
+            <div class="actions"><button class="btn">Open the passage</button><button class="btn">Report this answer</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">Not useful</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg ai"><p><b>Wednesday 2 December 2026, 16:00.</b> Extension requests must arrive at least 48 hours before…</p></div>
+            <div class="bar info">
+              <p>Marked as not useful. What was wrong? You can skip this.</p>
+              <div class="chips" style="margin-top:.5em"><button>Wrong information</button><button>Out of date</button><button>Didn't answer my question</button><button>Skip</button></div>
+              <p class="small" style="margin-top:.5em">Goes to the team that maintains the assistant. It doesn't change the answers in this conversation.</p>
+            </div>
+            <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+          </div></div>
+        </div>
+      </div>
+      <p class="note">It never gives in to a correction without a passage: the student's word does not change what the documents say, and the assistant says which of the two it found. No "I'll remember that": nothing is stored between conversations.</p>
+    </article>
+
+    <article class="state wide">
+      <h3><span class="n">14</span>Handed to a person</h3>
+      <p class="q">Who has it now, what do they know, and when will I hear?</p>
+      <p class="trigger"><b>Trigger:</b> the student presses <b>Ask Student Services</b> (on every answer and every "no") or types that they want a person; offered by the assistant after 7, 8, 9 and a second failure. <span class="tc">To confirm: Student Services takes study enquiries through a channel the portal can send to, their hours (assumed Mon-Fri 9-17) and reply time (2 working days is an example). If no such channel exists, this card becomes contact details plus "Copy summary".</span></p>
+      <div class="cols">
+        <div>
+          <p class="sub">Before sending</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg ai" style="max-width:100%">
+              <p>This is what Student Services would get, so you don't have to explain it again:</p>
+              <div class="preview">
+                <div class="lbl">Your question</div>How much is the resit fee for PSY2041?
+                <div class="lbl" style="margin-top:.5em">What the assistant found</div>Resit period 16 to 27 August 2027 (Academic Calendar). Fee not found in the documents.
+                <div class="lbl" style="margin-top:.5em">Sent with</div>Your name and student number
+              </div>
+            </div>
+            <div class="actions"><button class="btn primary">Send to Student Services</button><button class="btn">Edit</button><button class="btn ghost">Don't send</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">After sending, outside their hours</p>
+          <div class="phone"><div class="screen">
+            <div class="appbar"><b>Study assistant</b><a href="#">Support &amp; urgent help</a></div>
+            <div class="msg ai" style="max-width:100%">
+              <span class="pill" style="color:var(--ok)">Sent · Saturday 14 Nov, 19:42</span>
+              <p style="margin-top:.4em">Your question is with Student Services, reference <b>SS-20418</b>. They are closed now and open on Monday at 9:00.</p>
+              <p>A person will reply by email to your University address, usually within 2 working days.</p>
+            </div>
+            <div class="actions"><button class="btn">See what was sent</button></div>
+            <div class="composer"><span>Ask about a course or deadline</span><button class="btn primary" disabled>Send</button></div>
+          </div></div>
+        </div>
+        <div>
+          <p class="sub">What the Student Services adviser sees</p>
+          <div class="screen">
+            <div class="panel">
+              <div class="panel-h">Enquiry SS-20418 <span class="pill">From the study assistant</span></div>
+              <div class="panel-b">
+                <dl class="kv">
+                  <dt>Student</dt><dd>Amira Haddad · 2204418 · BSc Psychology, year 2</dd>
+                  <dt>Asked</dt><dd>How much is the resit fee for PSY2041?</dd>
+                  <dt>Assistant said</dt><dd>Resit period 16 to 27 August 2027, from Academic Calendar 2026/27. Did not state a fee.</dd>
+                  <dt>Handed over because</dt><dd>Fee not found in the documents; student asked for a person.</dd>
+                  <dt>Sent</dt><dd>Sat 14 Nov 2026, 19:42</dd>
+                </dl>
+                <div class="actions"><button class="btn primary">Reply by email</button><button class="btn">Open the conversation</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">During their hours the second line reads: "They are open until 17:00 today." This is the one place something leaves the conversation, so the student sees it and presses a button that names it; that is why 5 Needs my go-ahead has no card of its own. A message that trips the sensitive-moment classifier never goes down this route: it gets card S. The student's name and the references are examples.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ================= NOTES ================= -->
+<section class="moment m-notes">
+  <h2>Across all states</h2>
+  <div class="notes">
+    <article><h3>Interruption</h3><ul>
+      <li><b>Stop</b> keeps the text written so far, marked "Answer interrupted", with <b>Try again</b>. An interrupted answer shows no sources as final.</li>
+      <li>Phone locks or the portal goes to the background: the request carries on and the answer is in the thread on return (to confirm). No push notification.</li>
+      <li>Connection drops mid-answer: same as Stop, plus the offline bar from card 12.</li>
+    </ul></article>
+    <article><h3>Memory</h3><ul>
+      <li>Inside a conversation it keeps the course and level, shown as removable chips above the composer.</li>
+      <li>Between conversations it keeps nothing (assumed). It never says "I'll remember".</li>
+      <li>Whether past conversations are listed for the student, and how long they are stored, is behind the first-screen link. To confirm.</li>
+    </ul></article>
+    <article><h3>Proactivity</h3><ul>
+      <li>Not in this version: the assistant never speaks first and sends no reminders.</li>
+      <li>If deadline reminders are added later, they need the student's opt-in and a different board section.</li>
+    </ul></article>
+    <article><h3>Cost</h3><ul>
+      <li>Nothing is charged to students. Not applicable unless a per-student daily limit exists (to confirm).</li>
+      <li>If one exists: show what is left near the composer when few remain, and a "broke" message with the reset time when it runs out. Card S is never blocked by a limit.</li>
+    </ul></article>
+    <article><h3>Is chat the right surface?</h3><ul>
+      <li>Yes for open questions about regulations. The four or five most frequent deadline questions would be faster as a "Key dates" page in the portal; the chips on the first screen are the bridge.</li>
+    </ul></article>
+    <article><h3>Small screens and access</h3><ul>
+      <li>Every card is drawn at phone width. Sources open as a sheet over the chat; Stop and Send stay above the keyboard.</li>
+      <li>New messages are announced politely to screen readers, once complete; focus moves only for 12 and S.</li>
+      <li>Students who write in another language: to test. If answers are weaker, say which languages it handles on the first screen.</li>
+    </ul></article>
+  </div>
+</section>
+
+<section class="map">
+  <h2>State map</h2>
+  <table>
+    <tr><th>#</th><th>State</th><th>Applies</th><th>Why / where / signal</th></tr>
+    <tr><td>1</td><td>First use</td><td class="yes">Yes</td><td>Empty thread: scope, limit, four real examples, the route to urgent help.</td></tr>
+    <tr><td>2</td><td>Composing</td><td class="yes">Yes</td><td>Light: what it searches, the course and level it is carrying, the length limit. No attachments.</td></tr>
+    <tr><td>3</td><td>Working</td><td class="yes">Yes</td><td>Steps if the service reports them (to confirm); Stop in place of Send.</td></tr>
+    <tr><td>4</td><td>Needs a clarification</td><td class="yes">Yes</td><td>Dates and rules differ by level, programme and module. Signal to build.</td></tr>
+    <tr><td>5</td><td>Needs my go-ahead</td><td class="no">No</td><td>The assistant takes no actions. The only thing that leaves the chat is the hand-off message, previewed and confirmed in card 14.</td></tr>
+    <tr><td>6</td><td>Answer</td><td class="yes">Yes</td><td>Source next to each claim, date each document was updated, calculated values labelled.</td></tr>
+    <tr><td>7</td><td>Partial answer</td><td class="yes">Yes</td><td>Multi-part questions are common. Per-part coverage to build.</td></tr>
+    <tr><td>8</td><td>Unsure</td><td class="if">Only if</td><td>Only if documents carry their academic year and passages can be compared. Drawn because handbooks lagging the regulations is likely.</td></tr>
+    <tr><td>9</td><td>Doesn't know</td><td class="yes">Yes</td><td>No passage above the threshold. The most frequent "no".</td></tr>
+    <tr><td>10</td><td>Can't do that</td><td class="yes">Yes</td><td>Personal records, actions, unrelated topics. Points to the portal section.</td></tr>
+    <tr><td>11</td><td>Won't do that</td><td class="yes">Yes</td><td>Assessed work, rulings on individual cases, model refusals. Rules to confirm with the University.</td></tr>
+    <tr><td>12</td><td>Broke</td><td class="yes">Yes</td><td>Timeout, service error, offline (frequent on phones), second failure, conversation too long.</td></tr>
+    <tr><td>13</td><td>Corrected</td><td class="yes">Yes</td><td>Searches again and shows the passage either way; Not useful with an optional reason.</td></tr>
+    <tr><td>14</td><td>Handed to a person</td><td class="yes">Yes</td><td>Student Services, in and out of hours, with the adviser's view. Channel to confirm.</td></tr>
+    <tr><td>S</td><td>Sensitive moment</td><td class="yes">Yes</td><td>Students can type anything. Counselling Mon-Fri 9-17, Campus Security 24/7. Classifier to build; owners to review.</td></tr>
+    <tr><td>D1-D12</td><td>Delegation</td><td class="no">No</td><td>Not an agent: one question, one answer, no tools that change anything, no unattended work.</td></tr>
+  </table>
+</section>
+
+<section class="map">
+  <h2>Signals the system must expose</h2>
+  <table>
+    <tr><th>Signal</th><th>Used by</th><th>Status</th></tr>
+    <tr><td>Sensitive-message classifier on every input, before retrieval, two levels (risk now / distress), independent of the model's refusal</td><td>S</td><td class="build">To build</td></tr>
+    <tr><td>"Counselling open now": clock plus the team's closure days</td><td>S</td><td class="build">To build</td></tr>
+    <tr><td>Fixed support copy and numbers served without the model, so S works when the answer service is down</td><td>S, 12</td><td class="build">To build</td></tr>
+    <tr><td>Retrieval score per passage and a "nothing above threshold" result</td><td>9, 7</td><td class="confirm">To confirm</td></tr>
+    <tr><td>Per passage: document, section, link to the passage, last-updated date, academic year</td><td>6, 8, 13</td><td class="confirm">To confirm</td></tr>
+    <tr><td>Streaming text and step events (searching / writing)</td><td>3</td><td class="confirm">To confirm</td></tr>
+    <tr><td>"Needs" field: which of level, programme, module or year is missing</td><td>4</td><td class="build">To build</td></tr>
+    <tr><td>Student's programme and year from the portal session</td><td>4, 14</td><td class="confirm">To confirm</td></tr>
+    <tr><td>Answer split by part, each with its passages or none</td><td>7</td><td class="build">To build</td></tr>
+    <tr><td>Conflict between passages; passage from an earlier academic year</td><td>8</td><td class="build">To build</td></tr>
+    <tr><td>Request type (personal record / action / unrelated) and the portal destination for each</td><td>10</td><td class="build">To build</td></tr>
+    <tr><td>Refusal flag, separate from an empty answer; the University's list of rules</td><td>11</td><td class="confirm">To confirm</td></tr>
+    <tr><td>Error type the app can read: timeout / service / offline / too long / limit</td><td>12</td><td class="build">To build</td></tr>
+    <tr><td>Hand-off channel to Student Services, their open hours and a reference number back</td><td>14</td><td class="confirm">To confirm</td></tr>
+    <tr><td>Report endpoint for "wrong answer" and "not useful", with an owner who reads it</td><td>13, 11</td><td class="build">To build</td></tr>
+  </table>
+</section>
+
+<p class="foot">Names, dates, module codes, section numbers, phone numbers, references and portal section names on this board are examples and are listed as such in the spec; nobody should ship them as fact. Orange "to confirm" marks sit on every card whose copy states something assumed. The full list of assumptions, the test script and the open questions are in spec.md.</p>
+
+</main>
+</body>
+</html>

@@ -10,7 +10,7 @@ Now AI also *acts*: it sends, books, edits and keeps working while nobody watche
 
 **AI States** makes Claude design those moments: 14 states for AI that answers, 12 for AI that acts, each with exact copy, the system signal that triggers it, a test input and what to measure.
 
-[**Download the skill**](../../releases/latest) · [See a full example](examples/inbox-agent/) · [Español](#español)
+[**Download the skill**](../../releases/latest) · [Example: an agent](examples/inbox-agent/) · [Example: a chat on a phone](examples/study-assistant/) · [Español](#español)
 
 ## What you get
 
@@ -43,7 +43,17 @@ Describe your AI feature (or paste what you already shipped) and Claude returns:
 
 D1 Brief · D2 Plan · D3 Permission · D4 Working unattended · D5 Needs you · D6 Steered · D7 Handback · D8 Review at scale · D9 Undo and repair · D10 Went wrong while away · D11 Learns · D12 Acts toward others
 
-Plus four things that cut across all of them: interruption, memory, proactivity and cost.
+Plus five things that cut across all of them: interruption, memory, proactivity, cost and **sensitive moments**.
+
+### The state nobody designs
+
+Wherever people can type freely, someone will eventually write about harm, distress or an emergency instead of a task. Undesigned, they get a policy summary or "I couldn't find that". AI States draws that card with real copy and a real route, and marks it for review by its owner before it ships.
+
+![Sensitive moment card](docs/sensitive.png)
+
+### It answers at the size you ask
+
+Ask one question ("what should it say when it doesn't know?") and you get the copy, the trigger and the next actions in the chat. Ask for a design or a review and you get the full board and spec.
 
 ## Ten rules it checks first
 
@@ -88,10 +98,10 @@ It works in English and Spanish, and keeps your product's register (usted, vos, 
 ai-states/
 ├── SKILL.md                    the method
 ├── references/
-│   ├── states.md               the 14 answer states: pattern, anti-pattern, copy
+│   ├── states.md               the 14 answer states, sensitive moments: pattern, anti-pattern, copy
 │   ├── delegation.md           the 12 delegation states, autonomy levels, permissions
 │   ├── failure-modes.md        how AI fails, and how serious each gap is
-│   ├── surfaces.md             chat, inline, one-shot, search, agent, voice
+│   ├── surfaces.md             chat, inline, one-shot, search, agent, voice, small screens
 │   ├── copy.md                 how to word each state
 │   ├── measure.md              test script and what to log
 │   ├── anti-patterns.md        what to avoid, and what to do instead
@@ -128,6 +138,9 @@ Ahora la IA además *actúa*: envía, reserva, edita y sigue trabajando sin que 
 - **Una tabla de señales** que el sistema tiene que exponer.
 - **Un guion de pruebas** y qué registrar para cada estado.
 - **Para agentes, una tabla de permisos**: qué hace sin preguntar, qué pregunta antes y qué no hace nunca.
+- **El estado que nadie diseña**: qué pasa cuando alguien escribe sobre un daño, una urgencia o que no da más. Lo dibuja con texto real y lo marca para que lo revise quien corresponde.
+
+Si le hacés una sola pregunta, responde en el chat. Si le pedís un diseño o una revisión, entrega el tablero completo.
 
 ### Cómo instalarla
 

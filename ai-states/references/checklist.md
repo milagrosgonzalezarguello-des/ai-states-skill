@@ -10,6 +10,8 @@ A line that asks for something the system does not have (a usage limit, a human 
 - [ ] For a review, each one also says how it stands today: *designed*, *generic* or *missing*.
 - [ ] If the AI acts or works unattended, the twelve delegation states are in the map too.
 - [ ] Interruption, memory, proactivity and cost are covered as notes, or marked not applicable.
+- [ ] Where people can type freely, a sensitive moment has its card, its route and its named owner, and is marked for that owner's review.
+- [ ] If people may use it on a phone, the go-ahead and at least one "no" state were checked at phone width.
 - [ ] The stakes are stated, and the states that high or medium stakes require are present.
 - [ ] Every trigger names a real signal. Signals that do not exist yet are listed as *to build*; signals you could not confirm as *to confirm*.
 

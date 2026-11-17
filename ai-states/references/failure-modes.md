@@ -53,4 +53,4 @@ Silent beats loud: a bare spinner is annoying, but an empty summary of a scanned
 
 ## Sensitive moments
 
-Some inputs are not requests for the feature at all: a user in distress, describing harm, or in an emergency. A product for work rarely designs for this and should, briefly: recognise it, drop the task framing, give the real resource (a person, a number, a service) and do not carry on with the summary. Decide with the team who owns this and what the route is; do not improvise copy for it. On the board this is a note with the trigger, the route and the owner to be named - the one place where a card without final copy is right - and an open question in the spec.
+Some inputs are not requests for the feature at all: a user in distress, describing harm, or in an emergency. See "Sensitive moments" at the end of `states.md` - it is designed like any other state, and reviewed by its owner before shipping.

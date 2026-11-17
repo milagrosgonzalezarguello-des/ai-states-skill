@@ -70,6 +70,19 @@ Spoken, no screen or a small one.
 - Go-ahead repeats the key fact back ("Envío 500 pesos a Laura Gómez. ¿Confirmo?").
 - Errors say what to say next, not just what went wrong.
 
+## Small screens
+
+Many people who use an AI feature at work are not at a desk: drivers, warehouse and shop staff, nurses, field technicians. If the product has a mobile version, or you cannot rule one out, check each state at 360 px wide.
+
+- Sources, previews and go-ahead cards are the first to break: a source opens as a sheet over the conversation, not a side panel; a preview shows the fields that matter and folds the rest.
+- The stop control and the primary action stay reachable with a thumb, above the keyboard.
+- Long answers need the answer-first rule more than anywhere: the first two lines are all that is seen.
+- A long wait will be interrupted by the screen locking or the app going to the background. Say what happens then, and bring the result back with a notification only if the user asked for one.
+- Unstable connections make "offline" and "sent, not yet answered" frequent states, not edge cases.
+- Dictation is common: design for input with no punctuation and wrong words, and let the user confirm what was understood before anything is acted on.
+
+If the board is drawn for desktop, say so, and draw at least the go-ahead and one "no" state at phone width.
+
 ## Mixed surfaces
 
 Most real features combine two (a chat panel that also edits the document; a search that can act on a result). Map the states for each surface the user touches, and check the handover between them: where does a failure in the action show up when the user has already closed the panel?
