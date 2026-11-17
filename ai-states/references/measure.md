@@ -57,7 +57,8 @@ Deliver the test script as `state-tests.json` as well, so it can be run - by han
 
 - `state` starts with the state's number, as on the board. A test about something that is not one state (a planted instruction, leaving mid-run, the model being down) uses the state the user should end up in, and says what it is testing in `id` ("T-inject", "T-leave").
 - `setup` is whatever must be true first: the account, a document, a simulated failure (a timeout, the network off).
-- `must_include` and `must_not_include` are short strings a script can look for; `shows` is for a person or a model grading the result.
+- `must_include` and `must_not_include` are short strings a script can look for in the answer's text: two to four words the message itself will contain ("No encontré", "licencia por mudanza"). Button labels go in `actions`, not in `must_include`, because many systems return the text and the buttons separately. `shows` is for a person or a model grading the result.
+- `scripts/run_tests.py state-tests.json --url <the assistant's address>` (or `--cmd`) sends each input and checks those strings; tests whose `setup` needs a condition (offline, a timeout) are listed to run by hand. `--demo` shows the report without a feature.
 - States that need a condition rather than an input (offline, a usage limit, a second failure) put the condition in `setup` and may leave `input` as an ordinary question.
 - Include the adversarial ones: an instruction planted in a document, a request just outside the scope, the same question asked twice.
 

@@ -400,7 +400,7 @@ Design it like a state. An undesigned sensitive moment does more harm than a dra
 - The conversation can continue normally afterwards if the user goes on to something else: the composer stays enabled.
 - A real question in the same message is kept one press away ("Your question about the essay is still here"), not answered inside the card: the card shows no sources, no answer and no feedback controls, in every variant.
 - Never draw a phone number that looks real if you were not given it. Draw the button with its label and no number, marked "to confirm".
-- A message that mixes it with a real question, or that may be a figure of speech ("this essay is killing me, when is it due?"): one short line with the route, and the question answered or kept one press away. This is what makes catching too much cheap.
+- A message that mixes it with a real question, or that may be a figure of speech ("this essay is killing me, when is it due?"): one short line with the route, and the question kept one press away (never answered inside the card). This is what makes catching too much cheap.
 - Detection will miss some. A permanent, quiet entry point to the same route ("Support and urgent help") stays visible in the feature, whatever the model says.
 - The card is fixed copy, not generated: it must be the same every time and still appear when the model is down or a usage limit is reached.
 

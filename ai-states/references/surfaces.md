@@ -70,6 +70,18 @@ Spoken, no screen or a small one. The essentials are here; for a voice product r
 - Go-ahead repeats the key fact back ("Envío 500 pesos a Laura Gómez. ¿Confirmo?").
 - Errors say what to say next, not just what went wrong.
 
+## Image, video and audio generation
+
+The user describes something and gets media back. Waits are long, results vary, and "wrong" is often a matter of taste.
+
+- **Weight on:** 3 Working (often 20 s to several minutes: a real progress signal if the system has one, a preview as soon as there is one, and permission to leave), 6 Answer (several variants side by side), 11 Won't (content rules are the most frequent "no" here), 12 Broke.
+- **Variants, not one answer.** Show the set; let the user pick, refine one, or regenerate - and keep earlier sets reachable. Losing a result the user liked is the worst failure of this surface.
+- **Refine, don't restart.** "Same, but with..." keeps the chosen variant as the starting point and says so.
+- **Won't, specifically.** A blocked prompt says which part was blocked when it can ("people who exist", "brand logos"), so the user can change that part. Never a silent blank result or an image that ignores half the request.
+- **Partial is visible.** If it could not do part of the request (text in the image, a second person), say it next to the result.
+- **What it may be used for.** Where it matters, one line on use and rights, and a visible mark or label on generated media if the product applies one.
+- **Cost.** Generations often spend credits: say the cost on the button, and what is left.
+
 ## Small screens
 
 Many people who use an AI feature at work are not at a desk: drivers, warehouse and shop staff, nurses, field technicians. If the product has a mobile version, or you cannot rule one out, check each state at 360 px wide.

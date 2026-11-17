@@ -31,7 +31,7 @@
     .c2 for a section with an even number of cards, .c3 for multiples of three.
   - A large board is easier to build as a body fragment you write in parts and then put into this file.
   - A sensitive-moment card uses the number S and ends with <p class="review">Review with [owner] before shipping</p>.
-  - To show a state at phone width, wrap its .screen in <div class="phone">.
+  - To show a state at phone width, wrap its .screen in <div class="phone">. When most cards are phones, add .phones to each .grid.
   - For a new design, delete the findings block and the map's Today column.
   - Start a new board with scripts/new_board.py instead of copying this file by hand.
   - Something shown on every screen (a chat header with a permanent help link): write it once on the first
@@ -90,6 +90,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .cells .incomplete{border-left-color:#c98a00} .cells .incomplete b{color:var(--warn)}
 .cells .if{border-left-color:var(--info);border-style:dashed;border-left-style:solid} .cells .if b{color:var(--info)}
 .cells .covered{border-left-color:var(--ok);border-style:dashed;border-left-style:solid} .cells .covered b{color:var(--ok)}   /* replaced by a delegation state: "Covered by D4" */
+.cells .later{border-style:dashed;border-left-style:solid;border-left-color:var(--muted)} .cells .later b{color:var(--muted)}   /* quick mode: applies, not drawn yet */
 .cells .na{color:var(--muted);border-style:dashed} .cells .na b{color:var(--muted)}
 
 /* findings (reviews) */
@@ -108,6 +109,7 @@ h2{font-size:1.25rem;margin:0 0 14px}
 .moment>h2{display:flex;align-items:baseline;gap:.6em;padding-bottom:8px;border-bottom:3px solid var(--m)}
 .moment>h2 span{font-size:.9rem;font-weight:400;color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;align-items:start}
+.grid.phones{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))} .grid.phones .cols{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}   /* a board drawn at phone width */
 .grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}   /* fixed columns for big boards */
 .state.span2{grid-column:span 2}
 .m-before{--m:var(--before)} .m-during{--m:var(--during)} .m-answer{--m:var(--answer)} .m-no{--m:var(--no)} .m-after{--m:var(--after)}

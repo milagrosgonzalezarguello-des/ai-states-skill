@@ -10,7 +10,7 @@ Now AI also *acts*: it sends, books, edits and keeps working while nobody watche
 
 **AI States** makes Claude design those moments: 14 states for AI that answers, 12 for AI that acts, each with exact copy, the system signal that triggers it, a test input and what to measure. The board it draws is also a **clickable prototype**, and the tests come as a file engineering can run.
 
-[**Download the skill**](../../releases/latest) · [Example: an agent (open `state-board.html` and press *Try the flow*)](examples/inbox-agent/) · [Example: a chat on a phone](examples/study-assistant/) · [Español](#español)
+[**Download the skill**](../../releases/latest) · [Example: an agent (open `state-board.html` and press *Try the flow*)](examples/inbox-agent/) · [Example: a chat on a phone (playable)](examples/study-assistant/) · [Español](#español)
 
 ## What you get
 
@@ -23,7 +23,7 @@ Describe your AI feature (or paste what you already shipped) and Claude returns:
 | **A coverage strip** | Which states are designed, which fall into a generic message, which are missing. The gaps are visible at a glance. |
 | **A spec developers can build** | For each state: trigger, what it shows, copy, actions, what is kept, where it goes next. |
 | **A signals table** | What the system must expose for those states to exist. Often the most useful thing engineering gets. |
-| **Runnable tests** | `state-tests.json`: one input per state with what must and must not appear, ready for an evaluation harness. |
+| **Runnable tests** | `state-tests.json`: one input per state with what must and must not appear. `run_tests.py` sends them to your assistant (an API address or a command) and reports which land where they should. |
 | **Measures** | The event to log for each state, so you can see how often it happens in production. |
 | **For agents: a permission table** | What it does without asking, what it asks first, what it never does. |
 
@@ -55,7 +55,11 @@ Wherever people can type freely, someone will eventually write about harm, distr
 
 ### It answers at the size you ask
 
-Ask one question ("what should it say when it doesn't know?") and you get the copy, the trigger and the next actions in the chat. Ask for a design or a review and you get the full board and spec.
+Ask one question ("what should it say when it doesn't know?") and you get the copy, the trigger and the next actions in the chat. Ask for "the essentials" and you get **quick mode**: the five states that lose trust fastest, drawn and clickable, in about five minutes. Ask for a design or a review and you get the full board, spec and tests.
+
+### Same feature, same design
+
+A page of worked decisions (how serious a gap is, what Stop keeps, when to confirm and when to offer undo, which "no" a case is) keeps the design consistent from one run to the next.
 
 ## Does it work?
 
@@ -113,7 +117,8 @@ ai-states/
 │   ├── states.md               the 14 answer states, sensitive moments: pattern, anti-pattern, copy
 │   ├── delegation.md           the 12 delegation states, autonomy, permissions, several agents at once
 │   ├── failure-modes.md        how AI fails, and how serious each gap is
-│   ├── surfaces.md             chat, inline, one-shot, search, agent, voice, small screens
+│   ├── surfaces.md             chat, inline, one-shot, search, agent, image and video generation, small screens
+│   ├── decisions.md            the calls people make differently, settled
 │   ├── voice.md                spoken assistants: silence, barge-in, misheard input
 │   ├── copy.md                 how to word each state
 │   ├── measure.md              runnable tests (state-tests.json) and what to log
@@ -123,6 +128,7 @@ ai-states/
 └── scripts/
     ├── new_board.py            starts a board (English or Spanish)
     ├── check_board.py          dead ends, leftovers, contrast, untested states
+    ├── run_tests.py            runs state-tests.json against your assistant
     └── screenshot.py           renders the board to an image
 ```
 
@@ -154,7 +160,8 @@ Ahora la IA además *actúa*: envía, reserva, edita y sigue trabajando sin que 
 - **Una tabla de señales** que el sistema tiene que exponer.
 - **Un guion de pruebas** y qué registrar para cada estado.
 - **Un prototipo navegable**: el mismo tablero se recorre pantalla por pantalla y marca las que no tienen salida.
-- **Pruebas que se pueden correr**: un archivo con una entrada por estado y qué tiene que aparecer y qué no.
+- **Pruebas que se pueden correr**: un archivo con una entrada por estado y qué tiene que aparecer y qué no, más un script que las manda a tu asistente y dice cuáles pasan.
+- **Modo rápido**: si pedís "lo esencial", entrega en unos cinco minutos los cinco estados que más confianza hacen perder, dibujados y navegables.
 - **Para agentes, una tabla de permisos**: qué hace sin preguntar, qué pregunta antes y qué no hace nunca.
 - **El estado que nadie diseña**: qué pasa cuando alguien escribe sobre un daño, una urgencia o que no da más. Lo dibuja con texto real y lo marca para que lo revise quien corresponde.
 

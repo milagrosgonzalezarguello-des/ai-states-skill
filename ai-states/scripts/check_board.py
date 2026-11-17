@@ -69,7 +69,7 @@ class Board(HTMLParser):
         if tag == "span" and "n" in cls:
             self._n = ""
         if tag == "li" and self.stack[-3:-1] and "ul" in self.stack[-2:]:
-            if any(c in cls for c in ("designed", "incomplete", "generic", "missing", "if", "na", "review", "covered")):
+            if any(c in cls for c in ("designed", "incomplete", "generic", "missing", "if", "na", "review", "covered", "later")):
                 self._cell = [cls, ""]
 
     def handle_endtag(self, tag):

@@ -45,6 +45,8 @@ def main() -> int:
     ap.add_argument("--title", required=True)
     ap.add_argument("--lang", default="en")
     ap.add_argument("--review", action="store_true", help="keep the findings block and the Today column")
+    ap.add_argument("--body", help="an HTML file with everything that goes inside <main> (header, coverage, cards, notes, map, signals); replaces the template's example content")
+    ap.add_argument("--css", help="a CSS file with extra styles for this board")
     a = ap.parse_args()
 
     s = TEMPLATE.read_text(encoding="utf-8")
@@ -59,12 +61,20 @@ def main() -> int:
         s = re.sub(r"<!-- FINDINGS:.*?</section>\n", "", s, count=1, flags=re.S)
         s = s.replace("<th>Applies</th><th>Today</th>", "<th>Applies</th>")
         s = re.sub(r'(<tr><td>[^<]*</td><td>[^<]*</td><td class="[^"]*">[^<]*</td>)<td[^>]*>[^<]*</td>', r"\1", s)
+    if a.body:
+        body = Path(a.body).read_text(encoding="utf-8")
+        s = re.sub(r"<main>.*</main>", lambda m: "<main>\n" + body + "\n</main>", s, count=1, flags=re.S)
+    if a.css:
+        s = s.replace("</style>", Path(a.css).read_text(encoding="utf-8") + "\n</style>", 1)
     if a.lang.startswith("es"):
+        s = s.replace(f"<title>State board - {a.title}</title>", f"<title>Tablero de estados - {a.title}</title>")
+        s = s.replace(f"<h1>{a.title}: state board</h1>", f"<h1>{a.title}: tablero de estados</h1>")
         for en, es in ES:
             s = s.replace(en, es)
     Path(a.out).write_text(s, encoding="utf-8", newline="\n")
-    print(f"Wrote {Path(a.out).name}. Replace the example rows in the coverage strip, map and signals table, "
-          f"add your cards, then run check_board.py.")
+    print(f"Wrote {Path(a.out).name}. Inside it, replace: the header line and the meta pills, the example cells in the "
+          f"coverage strip, the example rows in the map and the signals table, and the four notes. Add your cards at "
+          f"ADD YOUR CARDS HERE, then run check_board.py.")
     return 0
 
 
